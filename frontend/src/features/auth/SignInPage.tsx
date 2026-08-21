@@ -172,25 +172,65 @@ export function SignInPage() {
       {/* Decorative brand panel — hidden from assistive tech so the form leads. */}
       <aside
         aria-hidden="true"
-        className="relative hidden flex-col justify-between bg-nav p-10 text-nav-fg lg:flex"
+        className="relative hidden flex-col overflow-hidden bg-nav p-12 text-nav-fg lg:flex"
       >
-        <img
-          src="/brand/aperture-logo-light.svg"
-          alt=""
-          className="h-8 w-auto"
-          width="180"
-          height="41"
+        {/* Soft ambient glow, drawn from the brand teal. */}
+        <span
+          className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 animate-glow rounded-pill"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(16,158,119,0.30), rgba(16,158,119,0) 70%)",
+          }}
         />
-        <div className="max-w-md space-y-4">
-          <p className="text-display font-semibold leading-tight text-nav-fg">
-            Evidence-based credit decisions for thin-file applicants.
+        <span
+          className="pointer-events-none absolute bottom-0 left-1/4 h-80 w-80 animate-glow rounded-pill"
+          style={{
+            animationDelay: "2s",
+            background:
+              "radial-gradient(closest-side, rgba(30,75,143,0.35), rgba(30,75,143,0) 70%)",
+          }}
+        />
+
+        {/* Prominent wordmark, top-left, with a gentle float. */}
+        <div className="relative animate-rise">
+          <img
+            src="/brand/aperture-logo-light.svg"
+            alt=""
+            className="h-10 w-auto animate-float"
+            width="225"
+            height="51"
+          />
+        </div>
+
+        {/* Hero copy, centred in the remaining space, staggered in. */}
+        <div className="relative my-auto max-w-xl">
+          <p
+            className="animate-rise eyebrow text-brand"
+            style={{ animationDelay: "120ms" }}
+          >
+            Credit decisioning
           </p>
-          <p className="text-body text-nav-muted">
+          <h2
+            className="animate-rise mt-4 font-serif text-hero font-medium text-nav-fg"
+            style={{ animationDelay: "200ms" }}
+          >
+            Evidence-based credit decisions for thin-file applicants.
+          </h2>
+          <p
+            className="animate-rise mt-5 max-w-md text-body leading-relaxed text-nav-muted"
+            style={{ animationDelay: "320ms" }}
+          >
             Aperture assembles verified financial evidence, scores it transparently,
             and records every decision with a traceable, tamper-evident audit trail.
           </p>
         </div>
-        <p className="eyebrow text-nav-muted">Credit decisioning workspace</p>
+
+        <p
+          className="animate-rise relative eyebrow text-nav-muted"
+          style={{ animationDelay: "440ms" }}
+        >
+          Credit decisioning workspace
+        </p>
       </aside>
     </main>
   );

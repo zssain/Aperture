@@ -10,6 +10,8 @@ export default {
   theme: {
     // Type scale: 30 / 24 / 18 / 15 / 13 / 12 / 11 (eyebrow) only.
     fontSize: {
+      // Hero is used only on the sign-in brand splash, never in the analytical UI.
+      hero: ["46px", { lineHeight: "52px", letterSpacing: "-0.01em" }],
       display: ["30px", { lineHeight: "36px" }],
       title: ["24px", { lineHeight: "32px" }],
       heading: ["18px", { lineHeight: "26px" }],
@@ -74,6 +76,8 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
+        // Elegant display serif — reserved for the sign-in brand splash.
+        serif: ['"Fraunces"', "Georgia", "serif"],
       },
       // Default border/divide colour = token border (so bare `border` uses it).
       borderColor: { DEFAULT: "#E2E8F0" },
@@ -123,12 +127,28 @@ export default {
           from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        // Sign-in splash only: a gentle entrance rise and a slow ambient float.
+        rise: {
+          from: { opacity: "0", transform: "translateY(14px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        glow: {
+          "0%, 100%": { opacity: "0.55" },
+          "50%": { opacity: "0.9" },
+        },
       },
       animation: {
         "fade-in": "fade-in 180ms ease-out",
         "modal-in": "modal-in 240ms cubic-bezier(0.16, 1, 0.3, 1)",
         "drawer-in": "drawer-in 240ms cubic-bezier(0.16, 1, 0.3, 1)",
         "sheet-in": "sheet-in 180ms ease-out",
+        rise: "rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        float: "float 6s ease-in-out infinite",
+        glow: "glow 8s ease-in-out infinite",
       },
     },
   },
