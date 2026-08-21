@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     aws_region: str = "ap-south-1"
     bedrock_model_id: str = "amazon.nova-lite-v1:0"
     bedrock_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
+    # Google Gemini. The key is read from the repo-root .env (Gemini_api_Key,
+    # matched case-insensitively). gemini-embedding-001 supports outputDimensionality,
+    # so it is reduced to `embedding_dimension` to match the merchant catalogue column.
+    gemini_api_key: str | None = None
+    gemini_embedding_model_id: str = "gemini-embedding-001"
+    gemini_model_id: str = "gemini-2.0-flash"
     llm_max_tokens: int = 1200
     secret_provider: str = "environment"
     aws_secret_id: str | None = None

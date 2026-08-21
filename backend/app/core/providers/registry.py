@@ -44,6 +44,14 @@ class ProviderRegistry:
             from app.core.providers.embeddings_bedrock import BedrockEmbeddingProvider
 
             registry.embeddings["bedrock"] = BedrockEmbeddingProvider(config)
+        elif config.embedding_provider == "gemini":
+            if not config.allow_external_embeddings:
+                raise ProviderNotConfigured(
+                    "EMBEDDING_PROVIDER=gemini requires ALLOW_EXTERNAL_EMBEDDINGS=true"
+                )
+            from app.core.providers.embeddings_gemini import GeminiEmbeddingProvider
+
+            registry.embeddings["gemini"] = GeminiEmbeddingProvider(config)
         elif config.embedding_provider != "noop":
             raise ProviderNotConfigured(f"unknown embedding provider: {config.embedding_provider}")
         if config.llm_provider == "bedrock":
