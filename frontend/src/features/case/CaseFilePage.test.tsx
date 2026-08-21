@@ -148,8 +148,9 @@ describe("CaseFilePage", () => {
     mockFetch(makeCase());
     renderCase("/cases/app-1");
 
-    // Decision band terms.
-    expect(await screen.findByText(/APPROVE_STARTER —/)).toBeInTheDocument();
+    // Decision summary: a readable headline plus the exact enum in a mono chip.
+    expect(await screen.findByText("Approve · starter band")).toBeInTheDocument();
+    expect(screen.getByText("APPROVE_STARTER")).toBeInTheDocument();
     // blocking_tab is "assessment": that tab is selected, Evidence (the first tab) is not.
     await waitFor(() =>
       expect(screen.getByRole("tab", { name: "Assessment" })).toHaveAttribute("aria-selected", "true"),
@@ -162,7 +163,7 @@ describe("CaseFilePage", () => {
   it("renders an uncalibrated PD as neutral with UNCAL (band chip and assessment tab)", async () => {
     mockFetch(makeCase());
     const { container } = renderCase("/cases/app-1");
-    await screen.findByText(/APPROVE_STARTER —/);
+    await screen.findByText("APPROVE_STARTER");
     // One UNCAL in the chip, one in the assessment tab PD.
     expect(screen.getAllByText("UNCAL").length).toBeGreaterThanOrEqual(2);
     expect(await axe(container)).toHaveNoViolations();
@@ -171,7 +172,7 @@ describe("CaseFilePage", () => {
   it("opens the drawer on a number click and restores focus on close", async () => {
     mockFetch(makeCase());
     renderCase("/cases/app-1");
-    await screen.findByText(/APPROVE_STARTER —/);
+    await screen.findByText("APPROVE_STARTER");
 
     const trigger = screen.getByRole("button", { name: /monthly inflow cv/i });
     await userEvent.click(trigger);
@@ -189,7 +190,7 @@ describe("CaseFilePage", () => {
   it("round-trips tab and drawer state through the URL", async () => {
     mockFetch(makeCase());
     renderCase("/cases/app-1?tab=evidence&feature=monthly_inflow_cv");
-    await screen.findByText(/APPROVE_STARTER —/);
+    await screen.findByText("APPROVE_STARTER");
 
     // ...with the drawer already open on the named feature.
     const dialog = await screen.findByRole("dialog");

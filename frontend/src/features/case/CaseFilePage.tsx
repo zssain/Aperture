@@ -10,9 +10,10 @@ import { OfflineBanner } from "../../components/ui/OfflineBanner";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { api } from "../../lib/api";
 import { useSession } from "../auth/useSession";
+import { AssessmentSummary } from "./AssessmentSummary";
 import { CaseHeader } from "./CaseHeader";
 import { CaseTabs } from "./CaseTabs";
-import { DecisionBand } from "./DecisionBand";
+import { DecisionSummary } from "./DecisionSummary";
 import { EvidenceDrawer } from "./EvidenceDrawer";
 import { OverrideModal, type OverrideSubmission } from "./OverrideModal";
 import { AssessmentTab } from "./tabs/AssessmentTab";
@@ -222,8 +223,11 @@ export function CaseFilePage() {
               busy: submitReview.isPending,
             }}
           />
-          <DecisionBand data={data} onSelectTab={(tab) => setParam("tab", tab)} />
+          <DecisionSummary data={data} />
         </div>
+
+        <AssessmentSummary chips={data.chips} onSelectTab={(tab) => setParam("tab", tab)} />
+
         <p className="text-sm text-muted">
           <span className="font-medium text-ink">Bureau-only counterfactual:</span>{" "}
           {data.bureau_only.outcome.replace(/_/g, " ")} — {data.bureau_only.note}
