@@ -15,6 +15,13 @@ from datetime import UTC, datetime
 from typing import Any
 
 from pypdf import PdfReader
+from pypdf.errors import FileNotDecryptedError
+
+_ENCRYPTED_PDF_MESSAGE = (
+    "This PDF is password-protected, so its contents cannot be read. Remove the "
+    "password (open it and re-save or print it to an unprotected PDF) and upload "
+    "again, or upload a CSV export instead."
+)
 
 from app.models.enums import EventDirection, SourceTier
 from app.services.sources.base import NormalizedEvent
@@ -151,13 +158,31 @@ class DocumentAdapter:
         except Exception as exc:
             raise SchemaError("File is not a readable PDF.") from exc
 
-        if len(reader.pages) > MAX_PDF_PAGES:
+        # Statement PDFs are frequently encrypted. An empty user password unlocks a
+        # file that carries only an owner password; a real user password cannot be
+        # guessed, so we surface a clear, actionable error instead of crashing.
+        if reader.is_encrypted:
+            try:
+                unlocked = reader.decrypt("")
+            except Exception as exc:
+                raise SchemaError(_ENCRYPTED_PDF_MESSAGE) from exc
+            if not unlocked:
+                raise SchemaError(_ENCRYPTED_PDF_MESSAGE)
+
+        try:
+            page_count = len(reader.pages)
+        except FileNotDecryptedError as exc:
+            raise SchemaError(_ENCRYPTED_PDF_MESSAGE) from exc
+        if page_count > MAX_PDF_PAGES:
             raise RowCapExceededError()
 
         lines: list[str] = []
-        for page in reader.pages:
-            text = page.extract_text() or ""
-            lines.extend(line.strip() for line in text.splitlines() if line.strip())
+        try:
+            for page in reader.pages:
+                text = page.extract_text() or ""
+                lines.extend(line.strip() for line in text.splitlines() if line.strip())
+        except FileNotDecryptedError as exc:
+            raise SchemaError(_ENCRYPTED_PDF_MESSAGE) from exc
 
         events: list[NormalizedEvent] = []
         rejected: list[RejectedRow] = []

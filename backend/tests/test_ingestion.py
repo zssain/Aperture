@@ -289,6 +289,40 @@ def test_huge_file_rejected_at_row_cap() -> None:
     assert "20,000" in str(excinfo.value)
 
 
+def test_password_protected_pdf_is_a_clean_schema_error() -> None:
+    """A user-password-encrypted statement (banks do this) must be a 4xx with an
+    actionable message — never an unhandled 500 from pypdf."""
+    import io
+
+    from pypdf import PdfWriter
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.encrypt("secret")  # a user password we cannot guess
+    buffer = io.BytesIO()
+    writer.write(buffer)
+
+    with pytest.raises(SchemaError) as excinfo:
+        DocumentAdapter().parse(buffer.getvalue(), "bank statement.pdf")
+    assert "password-protected" in str(excinfo.value)
+
+
+def test_owner_only_encrypted_pdf_unlocks_with_empty_password() -> None:
+    """A PDF carrying only an owner password unlocks with an empty user password."""
+    import io
+
+    from pypdf import PdfWriter
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.encrypt(user_password="", owner_password="owner")
+    buffer = io.BytesIO()
+    writer.write(buffer)
+
+    result = DocumentAdapter().parse(buffer.getvalue(), "statement.pdf")
+    assert result.events == []  # blank page → no transactions, but no crash
+
+
 async def test_tampered_pdf_ingests_with_provenance_and_capped_tier(
     db_session: AsyncSession,
 ) -> None:
