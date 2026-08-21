@@ -19,5 +19,17 @@ export default function App() {
     return () => setUnauthorizedHandler(null);
   }, [navigate]);
 
-  return <AppRoutes />;
+  return (
+    <>
+      {/* Rendered above the auth gate so it is the first focusable element from the
+          very first render, independent of session loading. */}
+      <a
+        href="#main-content"
+        className="sr-only z-50 rounded bg-surface p-3 focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+      >
+        Skip to content
+      </a>
+      <AppRoutes />
+    </>
+  );
 }

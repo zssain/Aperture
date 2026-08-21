@@ -21,13 +21,6 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-sunken">
-      <a
-        href="#main-content"
-        className="sr-only z-50 rounded bg-surface p-3 focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
-      >
-        Skip to content
-      </a>
-
       {/* Persistent desktop rail. */}
       <div className="fixed inset-y-0 left-0 z-30 hidden lg:block">
         <Sidebar />
