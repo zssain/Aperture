@@ -31,7 +31,9 @@ export type IconName =
   | "chevron-down"
   | "chevron-left"
   | "chevron-right"
-  | "arrow-right";
+  | "arrow-right"
+  | "eye"
+  | "eye-off";
 
 /** Path/element markup per glyph, drawn on the shared 24×24 grid. */
 const PATHS: Record<IconName, JSX.Element> = {
@@ -132,6 +134,20 @@ const PATHS: Record<IconName, JSX.Element> = {
   "chevron-left": <path d="M15 6l-6 6 6 6" />,
   "chevron-right": <path d="M9 6l6 6-6 6" />,
   "arrow-right": <path d="M5 12h14M13 6l6 6-6 6" />,
+  eye: (
+    <>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  "eye-off": (
+    <>
+      <path d="M4 4l16 16" />
+      <path d="M9.5 5.4A9.6 9.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 3.9" />
+      <path d="M6.2 7.2A17 17 0 0 0 2 12s3.5 7 10 7a9.5 9.5 0 0 0 3.3-.6" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </>
+  ),
 };
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {

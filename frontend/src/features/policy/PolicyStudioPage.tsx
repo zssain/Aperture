@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { OfflineBanner } from "../../components/ui/OfflineBanner";
 import { StaleDataBanner } from "../../components/ui/StaleDataBanner";
@@ -28,11 +29,21 @@ export function PolicyStudioPage() {
   return <>
     {!online ? <div className="mb-3"><OfflineBanner detail="Draft input remains visible, but save, simulate, and publish are blocked." /></div> : null}
     {dirty && report.data ? <div className="mb-3"><StaleDataBanner message="The draft changed since this simulation. Re-simulate before publishing." actionLabel="Clear old report" onAction={() => setJobId(undefined)} /></div> : null}
-    <div className="lg:hidden"><EmptyState title="Desktop required" description="Policy changes require a screen at least 1024px wide so the rules and simulation remain visible together." /></div>
+    <PageHeader
+      eyebrow="Oversight"
+      title="Policy Studio"
+      description="Structured rules only — live policies are immutable."
+      actions={selected?.status === "DRAFT" ? <>
+        <Button variant="secondary" loading={save.isPending} disabled={!rules || !dirty || !online} onClick={() => rules && save.mutate({ id: selected.id, rules }, { onSuccess: () => { setJobId(undefined); } })}>Save draft</Button>
+        <Button variant="secondary" icon="replay" loading={simulate.isPending} disabled={!selected.validation.ok || Boolean(dirty) || !online} onClick={() => simulate.mutate(selected.id, { onSuccess: (result) => setJobId(result.job_id) })}>Simulate</Button>
+        <span title={title}><Button disabled={!exactSimulation || !online} onClick={() => setModal(true)}>Publish</Button></span>
+      </> : undefined}
+    />
+    <div className="lg:hidden"><EmptyState icon="alert" title="Desktop required" description="Policy changes require a screen at least 1024px wide so the rules and simulation remain visible together." /></div>
     <div className="hidden min-h-[650px] overflow-hidden rounded border border-border bg-surface lg:flex">
-      <VersionList versions={policies.data ?? []} selected={selected?.id} onSelect={setSelectedId} onCreate={() => { if (online) create.mutate(undefined, { onSuccess: (draft) => setSelectedId(draft.id) }); }} />
-      <section aria-label="Policy editor" className="min-w-0 flex-1"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4"><div><h1 className="text-title font-semibold">Policy Studio</h1><p className="text-sm text-muted">Structured rules only — live policies are immutable.</p></div>{selected?.status === "DRAFT" ? <div className="flex gap-2"><Button variant="secondary" disabled={!rules || !dirty || !online} onClick={() => rules && save.mutate({ id: selected.id, rules }, { onSuccess: () => { setJobId(undefined); } })}>Save draft</Button><Button variant="secondary" disabled={!selected.validation.ok || Boolean(dirty) || simulate.isPending || !online} onClick={() => simulate.mutate(selected.id, { onSuccess: (result) => setJobId(result.job_id) })}>Simulate</Button><span title={title}><Button disabled={!exactSimulation || !online} onClick={() => setModal(true)}>Publish</Button></span></div> : null}</div>
-        {!selected || selected.status !== "DRAFT" ? <EmptyState title="No draft" description="Create a draft from the live policy to begin editing." /> : rules ? <RuleEditor rules={rules} live={live?.rules} errors={errors} onChange={(next) => { setRules(next); setJobId(undefined); }} /> : null}
+      <VersionList versions={policies.data ?? []} selected={selected?.id} onSelect={setSelectedId} onCreate={() => { if (online) create.mutate(undefined, { onSuccess: (draft) => setSelectedId(draft.id) }); }} creating={create.isPending} />
+      <section aria-label="Policy editor" className="min-w-0 flex-1">
+        {!selected || selected.status !== "DRAFT" ? <div className="p-4"><EmptyState icon="document" title="No draft" description="Create a draft from the live policy to begin editing." /></div> : rules ? <RuleEditor rules={rules} live={live?.rules} errors={errors} onChange={(next) => { setRules(next); setJobId(undefined); }} /> : null}
       </section>
       {report.data ? <SimulationReport report={report.data} /> : null}
     </div>
