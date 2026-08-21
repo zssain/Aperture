@@ -149,6 +149,8 @@ export default {
         rise: "rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
         float: "float 6s ease-in-out infinite",
         glow: "glow 8s ease-in-out infinite",
+        // Slow iris rotation for the aperture watermark.
+        "spin-slow": "spin 90s linear infinite",
       },
     },
   },

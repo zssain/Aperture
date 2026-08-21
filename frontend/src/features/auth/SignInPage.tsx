@@ -191,6 +191,13 @@ export function SignInPage() {
           }}
         />
 
+        {/* Oversized aperture glyph as a faint, slowly-rotating watermark. */}
+        <img
+          src="/brand/aperture-icon-light.svg"
+          alt=""
+          className="pointer-events-none absolute -bottom-24 -right-24 h-[34rem] w-[34rem] animate-spin-slow opacity-[0.06]"
+        />
+
         {/* Prominent wordmark, top-left, with a gentle float. */}
         <div className="relative animate-rise">
           <img
