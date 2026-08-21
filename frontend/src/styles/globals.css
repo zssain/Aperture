@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    /* Tabular numerics everywhere — dense numeric tables must not jitter. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  body {
+    @apply bg-sunken text-ink font-sans text-body antialiased;
+  }
+
+  /* A single, universal, visible focus ring. Colour never carries meaning alone. */
+  :focus-visible {
+    outline: 2px solid theme("colors.accent");
+    outline-offset: 2px;
+  }
+
+  /* Remove the default outline only where :focus-visible has replaced it. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer components {
+  table th:first-child { @apply sticky left-0 bg-inherit; }
+}

@@ -1,0 +1,904 @@
+{
+  "cases": {
+    "gig-semantic": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 21828644,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.02426455,
+          "reason_codes": [
+            "INCOME_STABLE",
+            "ACTIVITY_WELL_EXPLAINED",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 0,
+        "UNCLASSIFIED": 0,
+        "VECTOR_KNN": 6
+      },
+      "fired_rules": [
+        {
+          "name": "approve_enhanced",
+          "number": 7,
+          "outcome": "APPROVE_ENHANCED"
+        }
+      ],
+      "outcome": "APPROVE_ENHANCED",
+      "reason_codes": [
+        "GATE_APPROVE_ENHANCED",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 1500,
+        "approved_principal_paise": 5000000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_ENHANCED",
+        "graduation": null,
+        "max_principal_paise": 50000000,
+        "max_tenor_months": 36,
+        "rate_band": "A"
+      }
+    },
+    "gig-strong": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 21828644,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.02426455,
+          "reason_codes": [
+            "INCOME_STABLE",
+            "ACTIVITY_WELL_EXPLAINED",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 0,
+        "UNCLASSIFIED": 0,
+        "VECTOR_KNN": 6
+      },
+      "fired_rules": [
+        {
+          "name": "approve_enhanced",
+          "number": 7,
+          "outcome": "APPROVE_ENHANCED"
+        }
+      ],
+      "outcome": "APPROVE_ENHANCED",
+      "reason_codes": [
+        "GATE_APPROVE_ENHANCED",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 1500,
+        "approved_principal_paise": 5000000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_ENHANCED",
+        "graduation": null,
+        "max_principal_paise": 50000000,
+        "max_tenor_months": 36,
+        "rate_band": "A"
+      }
+    },
+    "high-risk": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 1363438,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.4157975,
+          "reason_codes": [
+            "INCOME_VOLATILITY_HIGH",
+            "UNEXPLAINED_ACTIVITY_HIGH",
+            "BALANCE_BUFFER_THIN"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 6,
+        "UNCLASSIFIED": 6,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "pd_decline",
+          "number": 6,
+          "outcome": "DECLINE_RISK"
+        }
+      ],
+      "outcome": "DECLINE_RISK",
+      "reason_codes": [
+        "GATE_DECLINE_RISK",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": null
+    },
+    "manipulation": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 21828644,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "HIGH",
+          "finding_detectors": [
+            "D5",
+            "D5",
+            "D5",
+            "D5",
+            "D5",
+            "D6"
+          ]
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.02031439,
+          "reason_codes": [
+            "INCOME_STABLE",
+            "ACTIVITY_WELL_EXPLAINED",
+            "BALANCE_BUFFER_STABLE"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 6,
+        "UNCLASSIFIED": 0,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "manipulation_high",
+          "number": 1,
+          "outcome": "FRAUD_REVIEW"
+        }
+      ],
+      "outcome": "FRAUD_REVIEW",
+      "reason_codes": [
+        "GATE_FRAUD_REVIEW",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": null
+    },
+    "mixed-income": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 21828644,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.02426455,
+          "reason_codes": [
+            "INCOME_STABLE",
+            "ACTIVITY_WELL_EXPLAINED",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 6,
+        "UNCLASSIFIED": 0,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "approve_enhanced",
+          "number": 7,
+          "outcome": "APPROVE_ENHANCED"
+        }
+      ],
+      "outcome": "APPROVE_ENHANCED",
+      "reason_codes": [
+        "GATE_APPROVE_ENHANCED",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 1500,
+        "approved_principal_paise": 5000000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_ENHANCED",
+        "graduation": null,
+        "max_principal_paise": 50000000,
+        "max_tenor_months": 36,
+        "rate_band": "A"
+      }
+    },
+    "near-boundary": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 1363438,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.20740104,
+          "reason_codes": [
+            "INCOME_VOLATILITY_HIGH",
+            "UNEXPLAINED_ACTIVITY_HIGH",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 6,
+        "UNCLASSIFIED": 6,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "approve_starter",
+          "number": 9,
+          "outcome": "APPROVE_STARTER"
+        }
+      ],
+      "outcome": "APPROVE_STARTER",
+      "reason_codes": [
+        "GATE_APPROVE_STARTER",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 2200,
+        "approved_principal_paise": 100000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_STARTER",
+        "graduation": {
+          "next_band": "APPROVE_STANDARD",
+          "on_time_emis_required": 6,
+          "review_months": 6
+        },
+        "max_principal_paise": 5000000,
+        "max_tenor_months": 12,
+        "rate_band": "C"
+      }
+    },
+    "newly-eligible": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 21828644,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.02426455,
+          "reason_codes": [
+            "INCOME_STABLE",
+            "ACTIVITY_WELL_EXPLAINED",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 6,
+        "UNCLASSIFIED": 0,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "approve_enhanced",
+          "number": 7,
+          "outcome": "APPROVE_ENHANCED"
+        }
+      ],
+      "outcome": "APPROVE_ENHANCED",
+      "reason_codes": [
+        "GATE_APPROVE_ENHANCED",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 1500,
+        "approved_principal_paise": 5000000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_ENHANCED",
+        "graduation": null,
+        "max_principal_paise": 50000000,
+        "max_tenor_months": 36,
+        "rate_band": "A"
+      }
+    },
+    "small-business": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 21828644,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.02426455,
+          "reason_codes": [
+            "INCOME_STABLE",
+            "ACTIVITY_WELL_EXPLAINED",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 6,
+        "UNCLASSIFIED": 0,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "approve_enhanced",
+          "number": 7,
+          "outcome": "APPROVE_ENHANCED"
+        }
+      ],
+      "outcome": "APPROVE_ENHANCED",
+      "reason_codes": [
+        "GATE_APPROVE_ENHANCED",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 1500,
+        "approved_principal_paise": 5000000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_ENHANCED",
+        "graduation": null,
+        "max_principal_paise": 50000000,
+        "max_tenor_months": 36,
+        "rate_band": "A"
+      }
+    },
+    "sparse": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": null,
+          "reason": "income_not_observable",
+          "status": "INDETERMINATE"
+        },
+        "coverage": {
+          "band": "LOW",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "business_income_share",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "gig_income_share",
+            "income_months_observed",
+            "inflow_source_count",
+            "inflow_trend_ratio",
+            "median_monthly_inflow_paise",
+            "monthly_emi_paise",
+            "monthly_inflow_cv",
+            "p25_monthly_inflow_paise",
+            "salary_income_share",
+            "telecom_continuity_months",
+            "total_inflow_6m_paise",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 39,
+          "unclassified_inflow_share": 1.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.15486681,
+          "reason_codes": [
+            "UNEXPLAINED_ACTIVITY_HIGH",
+            "BALANCE_BUFFER_STABLE",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 0,
+        "UNCLASSIFIED": 1,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "affordability_indeterminate",
+          "number": 3,
+          "outcome": "REVIEW_EVIDENCE"
+        }
+      ],
+      "outcome": "REVIEW_EVIDENCE",
+      "reason_codes": [
+        "GATE_REVIEW_EVIDENCE",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP"
+      ],
+      "terms": null
+    },
+    "starter": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 1363438,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.24641709,
+          "reason_codes": [
+            "INCOME_VOLATILITY_HIGH",
+            "UNEXPLAINED_ACTIVITY_HIGH",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 6,
+        "UNCLASSIFIED": 6,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "approve_starter",
+          "number": 9,
+          "outcome": "APPROVE_STARTER"
+        }
+      ],
+      "outcome": "APPROVE_STARTER",
+      "reason_codes": [
+        "GATE_APPROVE_STARTER",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 2200,
+        "approved_principal_paise": 100000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_STARTER",
+        "graduation": {
+          "next_band": "APPROVE_STANDARD",
+          "on_time_emis_required": 6,
+          "review_months": 6
+        },
+        "max_principal_paise": 5000000,
+        "max_tenor_months": 12,
+        "rate_band": "C"
+      }
+    },
+    "thin-salaried": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 21823191,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 63,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.02379392,
+          "reason_codes": [
+            "INCOME_STABLE",
+            "ACTIVITY_WELL_EXPLAINED",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 4,
+        "UNCLASSIFIED": 0,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "approve_standard",
+          "number": 8,
+          "outcome": "APPROVE_STANDARD"
+        }
+      ],
+      "outcome": "APPROVE_STANDARD",
+      "reason_codes": [
+        "GATE_APPROVE_STANDARD",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 1800,
+        "approved_principal_paise": 5000000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_STANDARD",
+        "graduation": {
+          "next_band": "APPROVE_ENHANCED",
+          "on_time_emis_required": 6,
+          "review_months": 6
+        },
+        "max_principal_paise": 25000000,
+        "max_tenor_months": 24,
+        "rate_band": "B"
+      }
+    },
+    "utility-history": {
+      "assessments": {
+        "affordability": {
+          "max_supportable_principal_paise": 21828644,
+          "reason": "within_dsr_ceiling",
+          "status": "PASS"
+        },
+        "coverage": {
+          "band": "MEDIUM",
+          "null_features": [
+            "bureau_active_loans",
+            "bureau_delinquencies_12m",
+            "bureau_score",
+            "debt_service_ratio",
+            "essential_expense_paise",
+            "essential_expense_ratio",
+            "expense_cover_months",
+            "monthly_emi_paise",
+            "telecom_continuity_months",
+            "utility_ontime_streak_months",
+            "utility_payment_ratio"
+          ],
+          "score": 84,
+          "unclassified_inflow_share": 0.0
+        },
+        "manipulation": {
+          "band": "CLEAR",
+          "finding_detectors": []
+        },
+        "risk": {
+          "calibration_status": "UNCALIBRATED",
+          "model_version": "cashflow-scorecard-v1",
+          "pd": 0.02426455,
+          "reason_codes": [
+            "INCOME_STABLE",
+            "ACTIVITY_WELL_EXPLAINED",
+            "BALANCE_HEALTHY"
+          ]
+        }
+      },
+      "classification_distribution": {
+        "RULE": 6,
+        "UNCLASSIFIED": 0,
+        "VECTOR_KNN": 0
+      },
+      "fired_rules": [
+        {
+          "name": "approve_enhanced",
+          "number": 7,
+          "outcome": "APPROVE_ENHANCED"
+        }
+      ],
+      "outcome": "APPROVE_ENHANCED",
+      "reason_codes": [
+        "GATE_APPROVE_ENHANCED",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "RISK_CONTRIBUTOR",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "COVERAGE_GAP",
+        "AFFORDABILITY_DSR",
+        "AFFORDABILITY_MAX_PRINCIPAL"
+      ],
+      "terms": {
+        "annual_rate_bps": 1500,
+        "approved_principal_paise": 5000000,
+        "approved_tenor_months": 12,
+        "band": "APPROVE_ENHANCED",
+        "graduation": null,
+        "max_principal_paise": 50000000,
+        "max_tenor_months": 36,
+        "rate_band": "A"
+      }
+    }
+  }
+}

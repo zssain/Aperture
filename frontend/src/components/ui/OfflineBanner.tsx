@@ -1,0 +1,1 @@
+export function OfflineBanner({ detail = "Cached data remains readable. Actions that change data are blocked." }: { detail?: string }) { return <div role="status" aria-live="polite" className="rounded border border-caution bg-surface px-3 py-2 text-sm"><strong>Offline.</strong> {detail}</div>; }

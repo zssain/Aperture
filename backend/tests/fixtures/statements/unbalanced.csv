@@ -1,0 +1,4 @@
+Date,Description,Amount,Balance
+2026-01-01,Salary credit,50000.00,70000.00
+2026-01-05,Rent debit,-15000.00,99999.00
+2026-01-07,EMI debit,-12000.00,43000.00

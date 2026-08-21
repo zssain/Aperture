@@ -1,0 +1,20 @@
+{
+  "scenario": "D6 positive: the source document carries native-HIGH provenance flags (editor-produced, balance discontinuity).",
+  "as_of": "2026-08-01T00:00:00+00:00",
+  "declared": {"occupation": "SALARIED"},
+  "events": [
+    {"id": "t1", "occurred_at": "2026-07-01T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 250000, "description": "neft inward", "counterparty": "cpT1", "source": "snap1"},
+    {"id": "t2", "occurred_at": "2026-07-15T00:00:00+00:00", "direction": "DEBIT", "amount_paise": 90000, "description": "merchant purchase", "counterparty": "cpT2", "source": "snap1"}
+  ],
+  "sources": [
+    {
+      "id": "snap1",
+      "tier": "DECLARED_DOCUMENT",
+      "event_ids": ["t1", "t2"],
+      "provenance": [
+        {"code": "EDITOR_PRODUCED", "severity": "HIGH", "detail": "Document producer indicates an editor, not a bank: 'libreoffice'"},
+        {"code": "BALANCE_DISCONTINUITY", "severity": "HIGH", "detail": "Running balance does not reconcile with transaction amounts."}
+      ]
+    }
+  ]
+}

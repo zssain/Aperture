@@ -1,0 +1,14 @@
+[
+  {"id":"gig-strong","name":"Asha","kind":"gig","narration":"RZPY SWIGGY PARTNER REMIT","classification":"VECTOR_KNN","risk":"LOW"},
+  {"id":"thin-salaried","name":"Ravi","kind":"salary","narration":"salary NEFT-CR-SAL-ACME ENTP PVT LTD","classification":"RULE","risk":"MEDIUM","months":4},
+  {"id":"manipulation","name":"Meera","kind":"salary","narration":"salary credit","classification":"RULE","risk":"LOW","manipulation":"HIGH"},
+  {"id":"high-risk","name":"Kabir","kind":"gig","narration":"gig payout","classification":"RULE","risk":"HIGH"},
+  {"id":"sparse","name":"Nila","kind":"unknown","narration":"ZXQ 991188 UNKNOWN","classification":"UNCLASSIFIED","risk":"MEDIUM","months":1},
+  {"id":"near-boundary","name":"Arjun","kind":"salary","narration":"salary payroll","classification":"RULE","risk":"MEDIUM"},
+  {"id":"utility-history","name":"Leela","kind":"salary","narration":"salary payroll","classification":"RULE","risk":"LOW"},
+  {"id":"small-business","name":"Dev","kind":"business","narration":"invoice settlement","classification":"RULE","risk":"LOW"},
+  {"id":"gig-semantic","name":"Mohan","kind":"gig","narration":"PORTER DRIVER WEEKLY REMIT","classification":"VECTOR_KNN","risk":"MEDIUM"},
+  {"id":"mixed-income","name":"Sara","kind":"business","narration":"business settlement","classification":"RULE","risk":"MEDIUM"},
+  {"id":"starter","name":"Fatima","kind":"salary","narration":"monthly wages","classification":"RULE","risk":"MEDIUM"},
+  {"id":"newly-eligible","name":"Vikram","kind":"salary","narration":"payroll credit","classification":"RULE","risk":"LOW"}
+]

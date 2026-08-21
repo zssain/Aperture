@@ -1,0 +1,19 @@
+{
+  "scenario": "Legitimate seasonal business: high season earlier in the year, low season now, several buyers. Must be CLEAR - a naive burst check must not punish seasonality.",
+  "as_of": "2026-08-01T00:00:00+00:00",
+  "declared": {
+    "occupation": "SELF_EMPLOYED",
+    "claimed_period_start": "2026-01-01T00:00:00+00:00",
+    "claimed_period_end": "2026-08-01T00:00:00+00:00"
+  },
+  "events": [
+    {"id": "s1", "occurred_at": "2026-01-10T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 1250000, "description": "invoice", "counterparty": "cpBuyerA"},
+    {"id": "s2", "occurred_at": "2026-01-28T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 980000, "description": "invoice", "counterparty": "cpBuyerB"},
+    {"id": "s3", "occurred_at": "2026-02-14T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 1420000, "description": "invoice", "counterparty": "cpBuyerC"},
+    {"id": "s4", "occurred_at": "2026-03-05T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 1180000, "description": "invoice", "counterparty": "cpBuyerA"},
+    {"id": "s5", "occurred_at": "2026-03-22T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 760000, "description": "invoice", "counterparty": "cpBuyerB"},
+    {"id": "s6", "occurred_at": "2026-05-18T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 540000, "description": "invoice", "counterparty": "cpBuyerC"},
+    {"id": "s7", "occurred_at": "2026-07-02T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 415000, "description": "invoice", "counterparty": "cpBuyerA"},
+    {"id": "s8", "occurred_at": "2026-07-26T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 388000, "description": "invoice", "counterparty": "cpBuyerB"}
+  ]
+}

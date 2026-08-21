@@ -1,0 +1,2 @@
+import { useEffect } from "react";
+export function useStaleCheck(refetch: () => unknown): void { useEffect(() => { const focused = () => { if (document.visibilityState === "visible" && navigator.onLine) void refetch(); }; window.addEventListener("focus", focused); document.addEventListener("visibilitychange", focused); return () => { window.removeEventListener("focus", focused); document.removeEventListener("visibilitychange", focused); }; }, [refetch]); }

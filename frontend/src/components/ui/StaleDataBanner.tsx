@@ -1,0 +1,2 @@
+import { Button } from "./Button";
+export function StaleDataBanner({ message, actionLabel = "Refresh", onAction }: { message: string; actionLabel?: string; onAction: () => void }) { return <div role="status" className="flex items-center justify-between gap-3 rounded border border-caution bg-surface px-3 py-2 text-sm"><span><strong>Newer data is available.</strong> {message}</span><Button size="sm" variant="secondary" onClick={onAction}>{actionLabel}</Button></div>; }

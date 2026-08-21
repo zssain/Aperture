@@ -1,0 +1,11 @@
+{
+  "scenario": "D3 positive: declared GIG income but one counterparty is 90% of inflow value.",
+  "as_of": "2026-08-01T00:00:00+00:00",
+  "declared": {"occupation": "GIG"},
+  "events": [
+    {"id": "m1", "occurred_at": "2026-07-01T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 300000, "description": "payout", "counterparty": "cpMain"},
+    {"id": "m2", "occurred_at": "2026-07-15T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 300000, "description": "payout", "counterparty": "cpMain"},
+    {"id": "m3", "occurred_at": "2026-07-29T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 300000, "description": "payout", "counterparty": "cpMain"},
+    {"id": "side", "occurred_at": "2026-07-10T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 100000, "description": "payout", "counterparty": "cpSide"}
+  ]
+}

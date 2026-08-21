@@ -1,0 +1,11 @@
+{
+  "scenario": "D8 positive: one counterparty fingerprint appears across 4 applications within 10 days.",
+  "as_of": "2026-08-01T00:00:00+00:00",
+  "declared": {"occupation": "SALARIED"},
+  "events": [
+    {"id": "x1", "occurred_at": "2026-07-20T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 250000, "description": "neft inward", "counterparty": "cpRing"}
+  ],
+  "cross_applicant": [
+    {"fingerprint": "cpRing", "kind": "COUNTERPARTY", "application_count": 4, "window_days": 10, "event_ids": ["x1"]}
+  ]
+}

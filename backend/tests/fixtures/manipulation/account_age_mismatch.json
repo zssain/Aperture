@@ -1,0 +1,14 @@
+{
+  "scenario": "D7 positive: a 12-month statement period is claimed but the observed transactions are only ~7 weeks old.",
+  "as_of": "2026-08-01T00:00:00+00:00",
+  "declared": {
+    "occupation": "SALARIED",
+    "claimed_period_start": "2025-08-01T00:00:00+00:00",
+    "claimed_period_end": "2026-08-01T00:00:00+00:00"
+  },
+  "events": [
+    {"id": "a1", "occurred_at": "2026-06-15T00:00:00+00:00", "direction": "DEBIT", "amount_paise": 40000, "description": "merchant purchase", "counterparty": "cpA1"},
+    {"id": "a2", "occurred_at": "2026-07-01T00:00:00+00:00", "direction": "DEBIT", "amount_paise": 40000, "description": "merchant purchase", "counterparty": "cpA2"},
+    {"id": "a3", "occurred_at": "2026-07-20T00:00:00+00:00", "direction": "DEBIT", "amount_paise": 40000, "description": "merchant purchase", "counterparty": "cpA3"}
+  ]
+}

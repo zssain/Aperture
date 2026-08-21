@@ -1,0 +1,10 @@
+{
+  "scenario": "D5 positive: the running balance jumps in a way the transaction sequence cannot explain.",
+  "as_of": "2026-08-01T00:00:00+00:00",
+  "declared": {"occupation": "SALARIED"},
+  "events": [
+    {"id": "u1", "occurred_at": "2026-07-01T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 100000, "balance_paise": 500000, "description": "merchant refund", "counterparty": "cpU1"},
+    {"id": "u2", "occurred_at": "2026-07-02T00:00:00+00:00", "direction": "DEBIT", "amount_paise": 50000, "balance_paise": 450000, "description": "merchant purchase", "counterparty": "cpU2"},
+    {"id": "u3", "occurred_at": "2026-07-03T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 100000, "balance_paise": 900000, "description": "merchant refund", "counterparty": "cpU3"}
+  ]
+}

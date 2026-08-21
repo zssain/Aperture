@@ -1,0 +1,13 @@
+name: Deploy artifact
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --build-arg UV_EXTRAS=embeddings -f deploy/Dockerfile.api -t aperture-api:${{ github.sha }} .
+      - run: docker build -f deploy/Dockerfile.frontend -t aperture-frontend:${{ github.sha }} .
+      - run: docker run --rm aperture-api:${{ github.sha }} python -m compileall -q app
+      - run: echo "Publishing/deploying requires the environment's approved AWS OIDC role."

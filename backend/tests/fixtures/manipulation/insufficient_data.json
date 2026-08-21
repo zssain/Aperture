@@ -1,0 +1,13 @@
+{
+  "scenario": "Under 30 days of data and no balance column: D2/D7 must report INSUFFICIENT_DATA and D5 too - never CLEAR.",
+  "as_of": "2026-08-01T00:00:00+00:00",
+  "declared": {
+    "occupation": "SALARIED",
+    "claimed_period_start": "2026-07-20T00:00:00+00:00",
+    "claimed_period_end": "2026-08-01T00:00:00+00:00"
+  },
+  "events": [
+    {"id": "i1", "occurred_at": "2026-07-20T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 250000, "description": "neft inward", "counterparty": "cpI1"},
+    {"id": "i2", "occurred_at": "2026-07-28T00:00:00+00:00", "direction": "DEBIT", "amount_paise": 60000, "description": "merchant purchase", "counterparty": "cpI2"}
+  ]
+}

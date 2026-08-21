@@ -1,0 +1,16 @@
+{
+  "scenario": "D2 positive: a large inflow spike in the 45 days before application vs a modest 6-month baseline.",
+  "as_of": "2026-08-01T00:00:00+00:00",
+  "declared": {"occupation": "SALARIED"},
+  "events": [
+    {"id": "b1", "occurred_at": "2026-01-15T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 20000, "description": "salary", "counterparty": "cpEmp"},
+    {"id": "b2", "occurred_at": "2026-02-15T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 20000, "description": "salary", "counterparty": "cpEmp"},
+    {"id": "b3", "occurred_at": "2026-03-15T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 20000, "description": "salary", "counterparty": "cpEmp"},
+    {"id": "b4", "occurred_at": "2026-04-15T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 20000, "description": "salary", "counterparty": "cpEmp"},
+    {"id": "b5", "occurred_at": "2026-05-15T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 20000, "description": "salary", "counterparty": "cpEmp"},
+    {"id": "b6", "occurred_at": "2026-06-10T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 20000, "description": "salary", "counterparty": "cpEmp"},
+    {"id": "s1", "occurred_at": "2026-06-20T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 100000, "description": "neft inward", "counterparty": "cpX1"},
+    {"id": "s2", "occurred_at": "2026-07-05T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 100000, "description": "neft inward", "counterparty": "cpX2"},
+    {"id": "s3", "occurred_at": "2026-07-20T00:00:00+00:00", "direction": "CREDIT", "amount_paise": 100000, "description": "neft inward", "counterparty": "cpX3"}
+  ]
+}

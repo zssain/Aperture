@@ -1,0 +1,56 @@
+{
+  "family": "aperture",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "REPLACE_EXECUTION_ROLE_ARN",
+  "taskRoleArn": "REPLACE_TASK_ROLE_ARN",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "REPLACE_ECR_API_IMAGE_SHA",
+      "essential": true,
+      "portMappings": [{"containerPort": 8000, "protocol": "tcp"}],
+      "environment": [
+        {"name": "ENVIRONMENT", "value": "production"},
+        {"name": "FRONTEND_ORIGIN", "value": "REPLACE_HTTPS_ORIGIN"},
+        {"name": "SECRET_PROVIDER", "value": "aws_secrets_manager"},
+        {"name": "AWS_SECRET_ID", "value": "REPLACE_SECRET_ID"},
+        {"name": "EMBEDDING_PROVIDER", "value": "local"},
+        {"name": "ALLOW_EXTERNAL_EMBEDDINGS", "value": "false"}
+      ],
+      "secrets": [{"name": "DATABASE_URL", "valueFrom": "REPLACE_DATABASE_URL_SECRET_ARN"}],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aperture/api",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/ready')\""],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      }
+    },
+    {
+      "name": "worker",
+      "image": "REPLACE_ECR_API_IMAGE_SHA",
+      "essential": true,
+      "command": ["python", "-m", "app.worker"],
+      "secrets": [{"name": "DATABASE_URL", "valueFrom": "REPLACE_DATABASE_URL_SECRET_ARN"}],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aperture/worker",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

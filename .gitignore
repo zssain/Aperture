@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+coverage/
+.coverage
+.coverage.*
+playwright-report/
+test-results/
+
+# Env & secrets — never commit real env files
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.log

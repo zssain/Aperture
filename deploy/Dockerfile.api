@@ -1,0 +1,24 @@
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim AS build
+WORKDIR /app
+COPY backend/pyproject.toml backend/uv.lock ./
+ARG UV_EXTRAS=""
+RUN if [ -n "$UV_EXTRAS" ]; then uv sync --frozen --no-dev --extra "$UV_EXTRAS"; else uv sync --frozen --no-dev; fi
+ARG EMBEDDING_MODEL_ID="sentence-transformers/all-MiniLM-L6-v2"
+RUN if [ "$UV_EXTRAS" = "embeddings" ]; then .venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('$EMBEDDING_MODEL_ID', cache_folder='/app/.cache/huggingface')"; fi
+COPY backend/app ./app
+COPY backend/alembic ./alembic
+COPY backend/alembic.ini ./
+COPY ml/__init__.py /ml/__init__.py
+COPY ml/scorecard /ml/scorecard
+COPY ml/artifacts /ml/artifacts
+
+FROM python:3.11-slim AS runtime
+RUN useradd --system --uid 10001 aperture
+WORKDIR /app
+COPY --from=build /app /app
+COPY --from=build /ml /ml
+RUN chown -R aperture:aperture /app/.cache
+ENV PATH=/app/.venv/bin:$PATH PYTHONUNBUFFERED=1 HF_HOME=/app/.cache/huggingface HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+USER aperture
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

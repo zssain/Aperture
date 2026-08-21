@@ -1,0 +1,59 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: aperture
+      POSTGRES_PASSWORD: aperture
+      POSTGRES_DB: aperture
+    volumes: [aperture_prod_db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aperture -d aperture"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  api:
+    image: ${APERTURE_API_IMAGE:-aperture-api:current}
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+      args:
+        UV_EXTRAS: embeddings
+    environment: &app_environment
+      DATABASE_URL: postgresql+asyncpg://aperture:aperture@db:5432/aperture
+      FRONTEND_ORIGIN: http://localhost:8080
+      ENVIRONMENT: production
+      EMBEDDING_PROVIDER: local
+      ALLOW_EXTERNAL_EMBEDDINGS: "false"
+      LLM_PROVIDER: noop
+    depends_on:
+      db: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  worker:
+    image: ${APERTURE_API_IMAGE:-aperture-api:current}
+    environment: *app_environment
+    command: ["python", "-m", "app.worker"]
+    depends_on:
+      db: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+  migrate:
+    image: ${APERTURE_API_IMAGE:-aperture-api:current}
+    environment: *app_environment
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      db: {condition: service_healthy}
+  frontend:
+    image: ${APERTURE_FRONTEND_IMAGE:-aperture-frontend:current}
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.frontend
+    ports: ["8080:8080"]
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  aperture_prod_db:
