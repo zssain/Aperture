@@ -1,3 +1,6 @@
+import type { ReactNode } from "react";
+
+import { InfoHint } from "../../../components/ui/InfoHint";
 import { MetricValue } from "../../../components/ui/MetricValue";
 import { AffordabilityWorking } from "../AffordabilityWorking";
 import { ContributionList } from "../ContributionList";
@@ -9,10 +12,21 @@ import type {
   RiskPayload,
 } from "../useCase";
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section aria-label={title} className="space-y-3">
-      <h2 className="text-sm font-medium text-ink">{title}</h2>
+      <h2 className="flex items-center gap-1.5 eyebrow">
+        {title}
+        {hint}
+      </h2>
       {children}
     </section>
   );
@@ -42,9 +56,9 @@ export function AssessmentTab({ data }: { data: CaseData }) {
 
   return (
     <div data-testid="case-tab-body" className="space-y-8 case-wide:grid case-wide:grid-cols-2 case-wide:gap-8 case-wide:space-y-0">
-      <Section title="Probability of default">
-        <div className="flex items-baseline gap-3">
-          <span className="text-[24px] font-semibold">
+      <Section title="Probability of default" hint={<InfoHint term="pd" />}>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-title font-semibold">
             <MetricValue
               value={pd !== null ? pd * 100 : null}
               status={pdStatus}
@@ -52,18 +66,19 @@ export function AssessmentTab({ data }: { data: CaseData }) {
               unit="%"
             />
           </span>
-          <span className="font-mono text-xs text-muted">
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted">
             {risk.model_version ?? "model —"} · {risk.calibration_status}
+            {pdStatus === "uncalibrated" ? <InfoHint term="uncalibrated" /> : null}
           </span>
         </div>
         <ContributionList contributions={riskPayload.contributions ?? []} />
       </Section>
 
-      <Section title="Affordability">
+      <Section title="Affordability" hint={<InfoHint term="dsr" />}>
         <AffordabilityWorking payload={affordPayload} />
       </Section>
 
-      <Section title="Coverage">
+      <Section title="Coverage" hint={<InfoHint term="evidence_coverage" />}>
         <CoverageBreakdown payload={coveragePayload} />
       </Section>
     </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Icon } from "../../components/ui/Icon";
 import { StatusDot } from "../../components/ui/StatusDot";
 import type { Tone } from "../../components/ui/tones";
 import { cn } from "../../lib/cn";
@@ -48,9 +49,7 @@ export function FindingCard({ finding }: { finding: ManipulationFinding }) {
           <span className="font-medium text-ink">{label}</span>
           <span className="text-sm text-muted">{finding.statement}</span>
         </span>
-        <span aria-hidden="true" className="text-muted">
-          {open ? "▲" : "▼"}
-        </span>
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="text-muted" />
       </button>
 
       {open ? (

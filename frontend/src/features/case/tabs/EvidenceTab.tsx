@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
-import { Chip } from "../../../components/ui/Chip";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { PermissionDenied } from "../../../components/ui/PermissionDenied";
 import { Select } from "../../../components/ui/Select";
+import { Skeleton } from "../../../components/ui/Skeleton";
+import { cn } from "../../../lib/cn";
 import { formatDate, formatPaise } from "../../../lib/format";
 import { CashflowTimeline, type CashflowPoint } from "../CashflowTimeline";
 import { useEvidence, type CaseData, type EvidenceEvent } from "../useCase";
@@ -24,6 +25,12 @@ const CATEGORIES = [
   "CASH",
   "OTHER",
 ];
+
+const TIER_LABELS: Record<string, string> = {
+  AA_VERIFIED: "AA verified",
+  BANK_VERIFIED: "Bank verified",
+  DECLARED_DOCUMENT: "Declared",
+};
 
 function monthKey(iso: string): string {
   return iso.slice(0, 7);
@@ -49,35 +56,53 @@ function aggregate(events: EvidenceEvent[]): CashflowPoint[] {
     }));
 }
 
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="flex flex-col">
+      <span className="eyebrow">{label}</span>
+      <span className="text-xs tabular-nums text-ink">{value}</span>
+    </span>
+  );
+}
+
 function SourceList({ data }: { data: CaseData }) {
   if (data.sources.length === 0) {
     return (
       <EmptyState
+        icon="bank"
         title="No evidence connected yet"
         description="This case is waiting on a connected source (bank, AA or a declared document) before it can be assessed."
       />
     );
   }
   return (
-    <ul className="divide-y divide-border rounded border border-border">
+    <ul className="space-y-2">
       {data.sources.map((source) => (
-        <li key={source.id} className="flex items-center justify-between gap-4 px-3 py-2 text-sm">
-          <div className="flex items-center gap-2">
+        <li key={source.id} className="rounded border border-border bg-surface p-3">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-ink">{source.source_type}</span>
-            {source.tier ? <Badge tone="accent">{source.tier.replace(/_/g, " ")}</Badge> : null}
-            <span className="text-muted">{source.status}</span>
+            {source.tier ? (
+              <Badge tone="accent">{TIER_LABELS[source.tier] ?? source.tier.replace(/_/g, " ")}</Badge>
+            ) : null}
+            <Badge tone={source.status === "CONNECTED" ? "positive" : "neutral"}>
+              {source.status}
+            </Badge>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted">
-            <span>
-              {source.period_start ? formatDate(source.period_start) : "—"} →{" "}
-              {source.period_end ? formatDate(source.period_end) : "—"}
-            </span>
-            <span>
-              {source.freshness_days !== null ? `${source.freshness_days}d old` : "freshness —"}
-            </span>
-            <span>
-              last sync {source.last_sync_at ? formatDate(source.last_sync_at) : "—"}
-            </span>
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2">
+            <Fact
+              label="Period"
+              value={`${source.period_start ? formatDate(source.period_start) : "—"} → ${
+                source.period_end ? formatDate(source.period_end) : "—"
+              }`}
+            />
+            <Fact
+              label="Freshness"
+              value={source.freshness_days !== null ? `${source.freshness_days}d old` : "—"}
+            />
+            <Fact
+              label="Last sync"
+              value={source.last_sync_at ? formatDate(source.last_sync_at) : "—"}
+            />
           </div>
         </li>
       ))}
@@ -85,8 +110,21 @@ function SourceList({ data }: { data: CaseData }) {
   );
 }
 
-/** Evidence tab: the source list, the cash-flow shape, and a server-paginated, server-filtered
- * transaction table. The client never receives the whole ledger. */
+/** One transaction amount, signed by direction where the field supports it. */
+function TxnAmount({ event }: { event: EvidenceEvent }) {
+  if (event.amount_paise === null) return <span className="text-muted">—</span>;
+  const credit = event.direction === "CREDIT";
+  const debit = event.direction === "DEBIT";
+  return (
+    <span className={cn("tabular-nums", credit ? "text-positive" : "text-ink")}>
+      {credit ? "+" : debit ? "−" : ""}
+      {formatPaise(event.amount_paise)}
+    </span>
+  );
+}
+
+/** Evidence tab: the source list, the cash-flow shape, and a server-paginated,
+ * server-filtered transaction table. The client never receives the whole ledger. */
 export function EvidenceTab({ data, applicationId }: { data: CaseData; applicationId: string }) {
   const [category, setCategory] = useState("");
 
@@ -103,23 +141,42 @@ export function EvidenceTab({ data, applicationId }: { data: CaseData; applicati
     [tableQuery.data],
   );
   const cashflow = useMemo(() => aggregate(chartRows), [chartRows]);
+  const tableEmpty = tableRows.length === 0 && !tableQuery.isLoading;
 
   return (
     <div data-testid="case-tab-body" className="space-y-6 case-wide:grid case-wide:grid-cols-2 case-wide:gap-8 case-wide:space-y-0">
-      <SourceList data={data} />
-
-      <section aria-label="Cash flow" className="space-y-2">
-        <h2 className="text-sm font-medium text-ink">Cash flow (6 months)</h2>
-        {chartQuery.isError ? chartQuery.error.status === 403 ? <PermissionDenied reason={chartQuery.error.message} /> : <ErrorState title="Could not load cash flow" message={chartQuery.error.message} correlationId={chartQuery.error.correlationId} onRetry={() => { void chartQuery.refetch(); }} /> : <CashflowTimeline data={cashflow} />}
+      <section aria-label="Connected sources" className="space-y-2">
+        <h2 className="eyebrow">Connected sources</h2>
+        <SourceList data={data} />
       </section>
 
-      <section aria-label="Transactions" className="space-y-2">
+      <section aria-label="Cash flow" className="space-y-2">
+        <h2 className="eyebrow">Cash flow · last 6 months</h2>
+        {chartQuery.isError ? (
+          chartQuery.error.status === 403 ? (
+            <PermissionDenied reason={chartQuery.error.message} />
+          ) : (
+            <ErrorState
+              title="Could not load cash flow"
+              message={chartQuery.error.message}
+              correlationId={chartQuery.error.correlationId}
+              onRetry={() => {
+                void chartQuery.refetch();
+              }}
+            />
+          )
+        ) : (
+          <CashflowTimeline data={cashflow} />
+        )}
+      </section>
+
+      <section aria-label="Transactions" className="space-y-2 case-wide:col-span-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-ink">Transactions</h2>
+          <h2 className="eyebrow">Transactions</h2>
           <label className="flex items-center gap-2 text-xs text-muted">
             Category
             <Select
-              className="w-40"
+              className="h-9 w-40"
               value={category}
               onChange={(event) => setCategory(event.target.value)}
             >
@@ -133,47 +190,82 @@ export function EvidenceTab({ data, applicationId }: { data: CaseData; applicati
           </label>
         </div>
 
-        {tableQuery.isError ? tableQuery.error.status === 403 ? <PermissionDenied reason={tableQuery.error.message} /> : <ErrorState title="Could not load transactions" message={tableQuery.error.message} correlationId={tableQuery.error.correlationId} onRetry={() => { void tableQuery.refetch(); }} /> : <div className="overflow-auto rounded border border-border">
-          <table className="w-full border-collapse text-sm">
-            <caption className="sr-only">Classified transactions</caption>
-            <thead className="bg-sunken">
-              <tr>
-                <th scope="col" className="h-row px-3 text-left font-medium text-muted">Date</th>
-                <th scope="col" className="h-row px-3 text-left font-medium text-muted">Description</th>
-                <th scope="col" className="h-row px-3 text-left font-medium text-muted">Category</th>
-                <th scope="col" className="h-row px-3 text-right font-medium text-muted">Amount</th>
-                <th scope="col" className="h-row px-3 text-right font-medium text-muted">Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableRows.map((event) => (
-                <tr key={event.id} className="border-t border-border">
-                  <td className="h-row px-3 text-left text-ink">{formatDate(event.occurred_at)}</td>
-                  <td className="h-row px-3 text-left text-ink">{event.description ?? "—"}</td>
-                  <td className="h-row px-3 text-left">
-                    <Chip tone="neutral">{event.category.replace(/_/g, " ")}</Chip>
-                    <span className="ml-2 text-xs text-muted">
-                      {event.classification_method ?? "UNCLASSIFIED"}
-                    </span>
-                  </td>
-                  <td className="h-row px-3 text-right tabular-nums text-ink">
-                    {event.amount_paise !== null ? formatPaise(event.amount_paise) : "—"}
-                  </td>
-                  <td className="h-row px-3 text-right tabular-nums text-muted">
-                    {event.balance_paise !== null ? formatPaise(event.balance_paise) : "—"}
-                  </td>
-                </tr>
-              ))}
-              {tableRows.length === 0 && !tableQuery.isLoading ? (
+        {tableQuery.isError ? (
+          tableQuery.error.status === 403 ? (
+            <PermissionDenied reason={tableQuery.error.message} />
+          ) : (
+            <ErrorState
+              title="Could not load transactions"
+              message={tableQuery.error.message}
+              correlationId={tableQuery.error.correlationId}
+              onRetry={() => {
+                void tableQuery.refetch();
+              }}
+            />
+          )
+        ) : tableEmpty ? (
+          <EmptyState
+            icon="document"
+            title={category ? "No transactions in this category" : "No transactions yet"}
+            description={
+              category
+                ? "Clear the category filter to see the full ledger."
+                : "Transactions will appear here once a source with history is connected."
+            }
+            action={
+              category ? (
+                <Button variant="secondary" size="sm" onClick={() => setCategory("")}>
+                  Clear filter
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <div className="overflow-auto rounded border border-border scrollbar-slim">
+            <table className="w-full border-collapse text-sm">
+              <caption className="sr-only">Classified transactions</caption>
+              <thead className="bg-sunken">
                 <tr>
-                  <td colSpan={5} className="h-row px-3 text-center text-muted">
-                    No transactions in this category.
-                  </td>
+                  <th scope="col" className="h-9 px-3 text-left text-eyebrow font-semibold text-muted">Date</th>
+                  <th scope="col" className="h-9 px-3 text-left text-eyebrow font-semibold text-muted">Description</th>
+                  <th scope="col" className="h-9 px-3 text-left text-eyebrow font-semibold text-muted">Category</th>
+                  <th scope="col" className="h-9 px-3 text-right text-eyebrow font-semibold text-muted">Amount</th>
+                  <th scope="col" className="h-9 px-3 text-right text-eyebrow font-semibold text-muted">Balance</th>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>}
+              </thead>
+              <tbody>
+                {tableQuery.isLoading
+                  ? Array.from({ length: 6 }).map((_, index) => (
+                      <tr key={index} className="border-t border-border">
+                        {Array.from({ length: 5 }).map((__, cell) => (
+                          <td key={cell} className="h-row px-3">
+                            <Skeleton className="h-4 w-20" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  : tableRows.map((event) => (
+                      <tr key={event.id} className="border-t border-border hover:bg-surface-subtle">
+                        <td className="h-row px-3 text-left tabular-nums text-ink">{formatDate(event.occurred_at)}</td>
+                        <td className="h-row px-3 text-left text-ink">{event.description ?? "—"}</td>
+                        <td className="h-row px-3 text-left">
+                          <Badge tone="neutral">{event.category.replace(/_/g, " ")}</Badge>
+                          <span className="ml-2 text-xs text-muted">
+                            {event.classification_method ?? "UNCLASSIFIED"}
+                          </span>
+                        </td>
+                        <td className="h-row px-3 text-right">
+                          <TxnAmount event={event} />
+                        </td>
+                        <td className="h-row px-3 text-right tabular-nums text-muted">
+                          {event.balance_paise !== null ? formatPaise(event.balance_paise) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {tableQuery.hasNextPage ? (
           <Button
@@ -181,8 +273,9 @@ export function EvidenceTab({ data, applicationId }: { data: CaseData; applicati
             size="sm"
             onClick={() => void tableQuery.fetchNextPage()}
             disabled={tableQuery.isFetchingNextPage}
+            loading={tableQuery.isFetchingNextPage}
           >
-            {tableQuery.isFetchingNextPage ? "Loading…" : "Load more"}
+            Load more
           </Button>
         ) : null}
       </section>
