@@ -5,9 +5,10 @@ import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { OfflineBanner } from "../../components/ui/OfflineBanner";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { useStaleCheck } from "../../hooks/useStaleCheck";
-import { useSession } from "../auth/useSession";
+import { useSession, type Role } from "../auth/useSession";
 import { QueueFilters } from "./QueueFilters";
 import { QueueTable } from "./QueueTable";
 import { QueueViewTabs } from "./QueueViewTabs";
@@ -29,6 +30,8 @@ function toggleSort(current: string, base: string): string {
   if (currentBase !== base) return base; // new column, ascending
   return current.startsWith("-") ? base : `-${base}`;
 }
+
+const NEW_CASE_ROLES: Role[] = ["CREDIT_ANALYST", "CREDIT_POLICY_OWNER"];
 
 export function QueuePage() {
   const { data: session } = useSession();
@@ -99,9 +102,24 @@ export function QueuePage() {
   const loading = query.isLoading;
   const active = filtersActive(filters);
   const resultLabel = `${rows.length} result${rows.length === 1 ? "" : "s"}`;
+  const canCreateCase = session ? NEW_CASE_ROLES.includes(session.role) : false;
+  const autoDecided = firstPage?.auto_decided_24h;
 
   return (
     <div className="flex flex-col gap-4">
+      <PageHeader
+        eyebrow="Case management"
+        title="Decision queue"
+        description="Cases routed to a human for review. Open a case to see the full evidence file, assessment and audit trail."
+        actions={
+          canCreateCase ? (
+            <Button icon="plus" onClick={() => navigate("/ingest")}>
+              New case
+            </Button>
+          ) : undefined
+        }
+      />
+
       {!online ? <OfflineBanner /> : null}
       {query.isError ? (
         <ErrorState
@@ -116,7 +134,19 @@ export function QueuePage() {
         <QueueViewTabs counts={counts} view={view} onViewChange={onViewChange} />
       ) : null}
 
-      <QueueFilters filters={filters} onChange={onFiltersChange} />
+      {typeof autoDecided === "number" ? (
+        <p className="text-xs text-muted">
+          <span className="tabular-nums text-neutral">{autoDecided}</span>{" "}
+          decision{autoDecided === 1 ? " was" : "s were"} made automatically in the last
+          24 hours and are not shown here.
+        </p>
+      ) : null}
+
+      <QueueFilters
+        filters={filters}
+        onChange={onFiltersChange}
+        resultLabel={loading ? undefined : resultLabel}
+      />
 
       {/* A filtered result count, announced politely for screen-reader users. */}
       <div aria-live="polite" className="sr-only">
@@ -132,6 +162,7 @@ export function QueuePage() {
       {!loading && rows.length === 0 ? (
         active ? (
           <EmptyState
+            icon="search"
             title="No cases match these filters"
             description={`Active: ${describeFilters(filters).join(", ")}.`}
             action={
@@ -142,6 +173,7 @@ export function QueuePage() {
           />
         ) : (
           <EmptyState
+            icon="check"
             title="Nothing needs review"
             description={`${firstPage?.auto_decided_24h ?? 0} decisions were made automatically in the last 24 hours.`}
             action={

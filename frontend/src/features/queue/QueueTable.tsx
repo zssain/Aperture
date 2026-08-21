@@ -1,11 +1,13 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useRef } from "react";
 
-import { Chip } from "../../components/ui/Chip";
+import { Badge } from "../../components/ui/Badge";
+import { Icon } from "../../components/ui/Icon";
 import { MetricValue } from "../../components/ui/MetricValue";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { StatusDot } from "../../components/ui/StatusDot";
 import type { Tone } from "../../components/ui/tones";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { cn } from "../../lib/cn";
 import { formatPaise } from "../../lib/format";
 import type { QueueRow } from "./useQueue";
@@ -47,6 +49,14 @@ const ACTION_LABELS: Record<string, string> = {
   REFER: "Refer",
 };
 
+/** Tone for the one badged column — the recommendation. */
+const ACTION_TONE: Record<string, Tone> = {
+  APPROVE: "positive",
+  APPROVE_STARTER: "positive",
+  DECLINE: "negative",
+  REFER: "caution",
+};
+
 const VERIFICATION_TONE: Record<string, Tone> = {
   CLEAR: "positive",
   ELEVATED: "caution",
@@ -62,11 +72,24 @@ function formatWaiting(seconds: number): string {
   return `${days}d ${hours % 24}h`;
 }
 
-function ariaSortFor(column: ColumnSpec, sort: string): "ascending" | "descending" | "none" | undefined {
+function sortDirection(
+  column: ColumnSpec,
+  sort: string,
+): "ascending" | "descending" | "none" | undefined {
   if (!column.sortBase) return undefined;
   const base = sort.replace(/^-/, "");
   if (base !== column.sortBase) return "none";
   return sort.startsWith("-") ? "descending" : "ascending";
+}
+
+/** An arrow that reflects the current sort direction (and hints on inactive cols). */
+function SortArrow({ direction }: { direction: "ascending" | "descending" | "none" }) {
+  if (direction === "none") {
+    return <Icon name="chevron-down" size={13} className="opacity-30" />;
+  }
+  return (
+    <Icon name={direction === "ascending" ? "chevron-up" : "chevron-down"} size={13} />
+  );
 }
 
 function ApplicantCell({ row }: { row: QueueRow }) {
@@ -81,8 +104,10 @@ function ApplicantCell({ row }: { row: QueueRow }) {
 function RecommendationCell({ row }: { row: QueueRow }) {
   const rec = row.recommendation;
   return (
-    <div className="flex flex-col">
-      <span className="text-ink">{ACTION_LABELS[rec.action] ?? rec.action}</span>
+    <div className="flex flex-col items-start gap-1">
+      <Badge tone={ACTION_TONE[rec.action] ?? "neutral"}>
+        {ACTION_LABELS[rec.action] ?? rec.action}
+      </Badge>
       {rec.approved_limit_paise !== null ? (
         <span className="text-xs text-muted">
           {formatPaise(rec.approved_limit_paise)}
@@ -94,11 +119,52 @@ function RecommendationCell({ row }: { row: QueueRow }) {
   );
 }
 
-/** The dense work table. Second column is ROUTED BECAUSE by design — it is the only column
- * that tells the analyst what kind of case this is before opening it. */
+/** The compact card list for narrow viewports (mounted alone below md). */
+function QueueCards({
+  rows,
+  loading,
+  onOpen,
+}: Pick<QueueTableProps, "rows" | "loading" | "onOpen">) {
+  return (
+    <div role="region" className="grid gap-2" aria-label="Cases awaiting review">
+      {loading
+        ? Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className="rounded border border-border bg-surface p-3">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="mt-2 h-4 w-full" />
+            </div>
+          ))
+        : rows.map((row) => (
+            <button
+              key={row.id}
+              type="button"
+              className="rounded border border-border bg-surface p-3 text-left transition-colors duration-fast hover:border-border-strong hover:bg-surface-subtle"
+              onClick={() => onOpen(row, false)}
+            >
+              <span className="flex items-center justify-between gap-2">
+                <strong className="text-ink">{row.applicant_name}</strong>
+                <span className="text-xs text-muted">
+                  {formatWaiting(row.waiting_seconds)}
+                </span>
+              </span>
+              <span className="mt-1 block text-sm text-muted">
+                {row.routed_because.text} ·{" "}
+                {ACTION_LABELS[row.recommendation.action] ?? row.recommendation.action}
+              </span>
+            </button>
+          ))}
+    </div>
+  );
+}
+
+/** The dense work table. Second visible column is ROUTED BECAUSE by design — it is
+ * the column that tells the analyst what kind of case this is before opening it. */
 export function QueueTable({ rows, loading, sort, onSort, onOpen }: QueueTableProps) {
   const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
   const focusedIndex = useRef(0);
+  // Mount exactly one layout — never both — so a screen reader hears one list.
+  // Defaults to the table when matchMedia is unavailable (jsdom).
+  const isDesktop = useMediaQuery("(min-width: 768px)", true);
 
   function focusRow(index: number): void {
     const clamped = Math.max(0, Math.min(index, rows.length - 1));
@@ -106,8 +172,8 @@ export function QueueTable({ rows, loading, sort, onSort, onOpen }: QueueTablePr
     rowRefs.current[clamped]?.focus();
   }
 
-  // j/k move the cursor; Enter opens. Handled at the region level so the keys work wherever
-  // focus sits within the table body.
+  // j/k move the cursor; Enter opens. Handled at the region level so the keys work
+  // wherever focus sits within the table body.
   function onRegionKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
     if (event.key === "j") {
       event.preventDefault();
@@ -119,7 +185,6 @@ export function QueueTable({ rows, loading, sort, onSort, onOpen }: QueueTablePr
   }
 
   function onRowClick(row: QueueRow, event: MouseEvent<HTMLTableRowElement>): void {
-    // Cmd/Ctrl-click opens the case in a new tab, like a link.
     onOpen(row, event.metaKey || event.ctrlKey);
   }
 
@@ -130,12 +195,13 @@ export function QueueTable({ rows, loading, sort, onSort, onOpen }: QueueTablePr
     }
   }
 
-  return (<>
-    <div role="region" className="grid gap-2 md:hidden" aria-label="Cases awaiting review">
-      {loading ? Array.from({ length: 6 }, (_, index) => <div key={index} className="rounded border border-border bg-surface p-3"><Skeleton className="h-4 w-28" /><Skeleton className="mt-2 h-4 w-full" /></div>) : rows.map((row) => <button key={row.id} className="rounded border border-border bg-surface p-3 text-left" onClick={() => onOpen(row, false)}><span className="flex justify-between"><strong>{row.applicant_name}</strong><span>{formatWaiting(row.waiting_seconds)}</span></span><span className="mt-1 block text-sm text-muted">{row.routed_because.text} · {ACTION_LABELS[row.recommendation.action] ?? row.recommendation.action}</span></button>)}
-    </div>
+  if (!isDesktop) {
+    return <QueueCards rows={rows} loading={loading} onOpen={onOpen} />;
+  }
+
+  return (
     <div
-      className="hidden w-full overflow-auto rounded border border-border bg-surface md:block"
+      className="w-full overflow-auto rounded border border-border bg-surface scrollbar-slim"
       onKeyDown={onRegionKeyDown}
     >
       <table className="w-full border-collapse text-sm">
@@ -147,30 +213,39 @@ export function QueueTable({ rows, loading, sort, onSort, onOpen }: QueueTablePr
         </colgroup>
         <thead className="sticky top-0 z-10 bg-sunken">
           <tr>
-            {COLUMNS.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                aria-sort={ariaSortFor(column, sort)}
-                className={cn(
-                  "h-row border-b border-border px-3 font-medium text-muted",
-                  column.numeric ? "text-right" : "text-left",
-                  column.responsive,
-                )}
-              >
-                {column.sortBase ? (
-                  <button
-                    type="button"
-                    onClick={() => onSort(column.sortBase as string)}
-                    className="font-medium text-muted hover:text-ink"
-                  >
-                    {column.header}
-                  </button>
-                ) : (
-                  column.header
-                )}
-              </th>
-            ))}
+            {COLUMNS.map((column) => {
+              const direction = sortDirection(column, sort);
+              return (
+                <th
+                  key={column.key}
+                  scope="col"
+                  aria-sort={direction}
+                  // Eyebrow sizing/spacing without a CSS text-transform, so the
+                  // literal header text stays the accessible name pinned by tests.
+                  className={cn(
+                    "h-9 border-b border-border px-3 text-eyebrow font-semibold text-muted",
+                    column.numeric ? "text-right" : "text-left",
+                    column.responsive,
+                  )}
+                >
+                  {column.sortBase ? (
+                    <button
+                      type="button"
+                      onClick={() => onSort(column.sortBase as string)}
+                      className={cn(
+                        "inline-flex items-center gap-1 font-semibold text-muted hover:text-ink",
+                        column.numeric ? "flex-row-reverse" : "",
+                      )}
+                    >
+                      {column.header}
+                      <SortArrow direction={direction ?? "none"} />
+                    </button>
+                  ) : (
+                    column.header
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -201,17 +276,38 @@ export function QueueTable({ rows, loading, sort, onSort, onOpen }: QueueTablePr
                   onKeyDown={(event) => onRowKeyDown(row, event)}
                   className={cn(
                     "cursor-pointer border-b border-border last:border-b-0",
-                    "hover:bg-sunken focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                    "hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
                   )}
                 >
                   <td className="h-row px-3 text-ink">
                     <ApplicantCell row={row} />
                   </td>
                   <td className="hidden h-row px-3 text-right tabular-nums xl:table-cell">
-                    {row.amount_paise === null ? <><span aria-hidden="true">—</span><span className="sr-only">Unavailable from system</span></> : formatPaise(row.amount_paise)}
+                    {row.amount_paise === null ? (
+                      <>
+                        <span aria-hidden="true" className="text-muted">—</span>
+                        <span className="sr-only">Unavailable from system</span>
+                      </>
+                    ) : (
+                      formatPaise(row.amount_paise)
+                    )}
                   </td>
-                  <td className="hidden h-row px-3 xl:table-cell"><Chip tone="neutral">— system</Chip></td>
-                  <td className="h-row px-3 text-ink">{row.routed_because.text}</td>
+                  <td className="hidden h-row px-3 xl:table-cell">
+                    {/* The queue endpoint does not carry source mix — mark it
+                        explicitly unavailable rather than inventing a value. */}
+                    <span aria-hidden="true" className="text-muted">—</span>
+                    <span className="sr-only">
+                      Source mix is not available in the queue view
+                    </span>
+                  </td>
+                  <td className="h-row px-3 text-ink">
+                    <span
+                      className="line-clamp-2"
+                      title={row.routed_because.text}
+                    >
+                      {row.routed_because.text}
+                    </span>
+                  </td>
                   <td className="h-row px-3 text-ink">
                     <RecommendationCell row={row} />
                   </td>
@@ -226,14 +322,10 @@ export function QueueTable({ rows, loading, sort, onSort, onOpen }: QueueTablePr
                     />
                   </td>
                   <td className="hidden h-row px-3 xl:table-cell">
-                    {row.verification === "UNKNOWN" ? (
-                      <Chip tone="neutral">Unknown</Chip>
-                    ) : (
-                      <StatusDot
-                        tone={VERIFICATION_TONE[row.verification] ?? "neutral"}
-                        label={row.verification}
-                      />
-                    )}
+                    <StatusDot
+                      tone={VERIFICATION_TONE[row.verification] ?? "neutral"}
+                      label={row.verification === "UNKNOWN" ? "Unknown" : row.verification}
+                    />
                   </td>
                   <td className="h-row px-3 text-right tabular-nums text-ink">
                     {formatWaiting(row.waiting_seconds)}
@@ -243,5 +335,5 @@ export function QueueTable({ rows, loading, sort, onSort, onOpen }: QueueTablePr
         </tbody>
       </table>
     </div>
-  </>);
+  );
 }
