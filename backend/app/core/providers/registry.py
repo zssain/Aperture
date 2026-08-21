@@ -58,6 +58,10 @@ class ProviderRegistry:
             from app.core.providers.llm_bedrock import BedrockLLMProvider
 
             registry.llms["bedrock"] = BedrockLLMProvider(config)
+        elif config.llm_provider == "gemini":
+            from app.core.providers.llm_gemini import GeminiLLMProvider
+
+            registry.llms["gemini"] = GeminiLLMProvider(config)
         elif config.llm_provider != "noop":
             raise ProviderNotConfigured(f"unknown LLM provider: {config.llm_provider}")
         return registry

@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     # so it is reduced to `embedding_dimension` to match the merchant catalogue column.
     gemini_api_key: str | None = None
     gemini_embedding_model_id: str = "gemini-embedding-001"
-    gemini_model_id: str = "gemini-2.0-flash"
+    gemini_model_id: str = "gemini-flash-lite-latest"
     llm_max_tokens: int = 1200
     secret_provider: str = "environment"
     aws_secret_id: str | None = None
