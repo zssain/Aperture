@@ -42,17 +42,19 @@ export function RecourseOption({
   return (
     <article
       className={cn(
-        "space-y-2 rounded border border-border p-4",
-        expired ? "opacity-60" : "bg-surface",
+        "flex flex-col gap-2 rounded border p-4",
+        expired ? "border-border opacity-60" : "border-border bg-surface",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-start justify-between gap-2">
         <h3 className="font-medium text-ink">{LEVER_LABELS[lever] ?? lever}</h3>
         {option.projected_action ? (
-          <Badge tone="positive">→ {option.projected_action}</Badge>
+          <Badge tone="positive" glyph>
+            {option.projected_action}
+          </Badge>
         ) : null}
       </div>
-      <p className="text-sm text-muted">Action taken by: the applicant</p>
+      <p className="text-xs text-muted">Taken by the applicant</p>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {option.projected_limit_paise !== null ? (
           <>

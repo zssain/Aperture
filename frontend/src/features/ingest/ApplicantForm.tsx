@@ -60,7 +60,7 @@ export function ApplicantForm({ values, errors, disabled = false, onChange }: Ap
   return (
     <section aria-labelledby="applicant-heading" className="rounded border border-border bg-surface p-5">
       <div className="mb-4">
-        <p className="text-xs font-medium uppercase text-muted">1. Applicant &amp; request</p>
+        <p className="eyebrow">Step 1 · Applicant &amp; request</p>
         <h2 id="applicant-heading" className="text-heading font-semibold text-ink">
           Who is applying?
         </h2>

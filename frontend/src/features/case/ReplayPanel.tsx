@@ -12,17 +12,19 @@ export function ReplayPanel({ decisionId }: { decisionId: string }) {
 
   return (
     <section aria-label="Replay" className="space-y-3">
+      <h3 className="eyebrow">Deterministic replay</h3>
       <div className="flex items-center gap-3">
         <Button
           variant="secondary"
           size="sm"
+          icon="replay"
+          loading={replay.isPending}
           onClick={() => replay.mutate()}
-          disabled={replay.isPending}
         >
-          {replay.isPending ? "Replaying…" : "Replay decision"}
+          Replay decision
         </Button>
         {result ? (
-          <Badge tone={diverged ? "negative" : "positive"}>{result.status}</Badge>
+          <Badge tone={diverged ? "negative" : "positive"} glyph>{result.status}</Badge>
         ) : null}
       </div>
 

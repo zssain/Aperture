@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Button } from "../../components/ui/Button";
+import { Icon } from "../../components/ui/Icon";
 import { Modal } from "../../components/ui/Modal";
 import { Select } from "../../components/ui/Select";
 import { cn } from "../../lib/cn";
@@ -112,8 +113,14 @@ export function OverrideModal({
           <Button variant="ghost" size="sm" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="primary" size="sm" disabled={!valid || submitting} onClick={submit}>
-            {submitting ? "Submitting…" : "Submit override"}
+          <Button
+            variant="primary"
+            size="sm"
+            loading={submitting}
+            disabled={!valid}
+            onClick={submit}
+          >
+            Submit override
           </Button>
         </>
       }
@@ -170,7 +177,20 @@ export function OverrideModal({
           </span>
         </label>
 
-        {errorMessage ? <p className="text-sm text-negative">{errorMessage}</p> : null}
+        {errorMessage ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded border border-negative bg-negative-subtle p-3 text-sm text-negative"
+          >
+            <span className="mt-0.5 shrink-0">
+              <Icon name="shield" size={16} />
+            </span>
+            <div>
+              <p className="font-medium">Authority required</p>
+              <p className="mt-0.5 text-negative/90">{errorMessage}</p>
+            </div>
+          </div>
+        ) : null}
       </div>
     </Modal>
   );

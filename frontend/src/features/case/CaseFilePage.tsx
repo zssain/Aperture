@@ -13,6 +13,7 @@ import { useSession } from "../auth/useSession";
 import { AssessmentSummary } from "./AssessmentSummary";
 import { CaseHeader } from "./CaseHeader";
 import { CaseTabs } from "./CaseTabs";
+import { ConfirmRecommendationModal } from "./ConfirmRecommendationModal";
 import { DecisionSummary } from "./DecisionSummary";
 import { EvidenceDrawer } from "./EvidenceDrawer";
 import { OverrideModal, type OverrideSubmission } from "./OverrideModal";
@@ -68,6 +69,7 @@ export function CaseFilePage() {
   const activeTab = urlTab ?? data?.blocking_tab ?? "evidence";
 
   const [overrideOpen, setOverrideOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingReturn, setPendingReturn] = useState(false);
   const returnTimer = useRef<number | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -214,8 +216,7 @@ export function CaseFilePage() {
           <CaseHeader
             data={data}
             actions={{
-              onConfirm: () =>
-                submitReview.mutate({ action: "confirm" }, { onSuccess: afterReview }),
+              onConfirm: () => setConfirmOpen(true),
               onOverride: () => setOverrideOpen(true),
               onRequestEvidence: () => setParam("tab", "recourse"),
               disabled,
@@ -256,6 +257,24 @@ export function CaseFilePage() {
           snapshotId={data.feature_snapshot_id}
           featureKey={feature}
           onClose={closeFeature}
+        />
+
+        <ConfirmRecommendationModal
+          data={data}
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          submitting={submitReview.isPending}
+          onConfirm={() =>
+            submitReview.mutate(
+              { action: "confirm" },
+              {
+                onSuccess: () => {
+                  setConfirmOpen(false);
+                  afterReview();
+                },
+              },
+            )
+          }
         />
 
         {decision ? (

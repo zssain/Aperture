@@ -32,7 +32,7 @@ export function DocumentUpload({
   return (
     <section aria-labelledby="upload-heading" className="rounded border border-border bg-surface p-5">
       <div className="mb-4">
-        <p className="text-xs font-medium uppercase text-muted">3. Statement upload</p>
+        <p className="eyebrow">Step 3 · Statement upload</p>
         <h2 id="upload-heading" className="text-heading font-semibold text-ink">
           Upload financial evidence
         </h2>

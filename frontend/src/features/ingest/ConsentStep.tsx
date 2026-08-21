@@ -35,7 +35,7 @@ export function ConsentStep({
   return (
     <section aria-labelledby="consent-heading" className="rounded border border-border bg-surface p-5">
       <div className="mb-4">
-        <p className="text-xs font-medium uppercase text-muted">3. Consent</p>
+        <p className="eyebrow">Step 3 · Consent</p>
         <h2 id="consent-heading" className="text-heading font-semibold text-ink">
           Applicant authorisation
         </h2>

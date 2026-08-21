@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { OfflineBanner } from "../../components/ui/OfflineBanner";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { ApplicantForm, type ApplicantErrors } from "./ApplicantForm";
 import { ConsentStep } from "./ConsentStep";
@@ -162,12 +163,11 @@ export function IngestPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       {!online ? <OfflineBanner detail="Your form is preserved locally. Reconnect before starting ingestion." /> : null}
-      <header>
-        <h1 className="text-title font-semibold text-ink">Start a new case</h1>
-        <p className="mt-1 text-sm text-muted">
-          Create the request, collect evidence with explicit consent, and follow every pipeline stage.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Case management"
+        title="New case"
+        description="Create the request, collect evidence with explicit consent, and follow every pipeline stage through to a decision."
+      />
 
       <ApplicantForm values={applicant} errors={errors} disabled={busy} onChange={updateApplicant} />
       <SourceConnect
