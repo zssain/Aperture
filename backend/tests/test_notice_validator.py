@@ -10,7 +10,7 @@ from app.services.notices.validator import LLMNotice, validate_notice
 from pydantic import ValidationError
 
 
-def context(outcome: str = "DECLINE_RISK") -> NoticeContext:
+def context(outcome: str = "DECLINE_RISK", language: str = "en") -> NoticeContext:
     return build_notice_context(
         outcome=outcome,
         terms=None,
@@ -18,8 +18,29 @@ def context(outcome: str = "DECLINE_RISK") -> NoticeContext:
         recourse=[],
         expiry_date=None,
         applicant_display_name="Applicant",
-        language="en",
+        language=language,
     )
+
+
+@pytest.mark.parametrize(
+    "subject,body,language",
+    [
+        # English negations must NOT be flagged as approval language on a decline.
+        ("Application update", "Your application was not approved at this time.", "en"),
+        ("Application update", "We were unable to approve your request right now.", "en"),
+        # Hindi "अस्वीकृत" (declined) contains "स्वीकृत" (approved) as a substring — it
+        # must not be false-flagged. Regression for the naive-substring bug.
+        ("आवेदन अद्यतन", "आपका आवेदन अस्वीकृत कर दिया गया है। कृपया संपर्क करें।", "hi"),
+    ],
+)
+def test_validator_allows_negated_decline_language(
+    subject: str, body: str, language: str
+) -> None:
+    result = validate_notice(
+        LLMNotice(subject=subject, body=body, language=language),
+        context(language=language),
+    )
+    assert "approval language" not in " ".join(result.errors), result.errors
 
 
 def test_context_structurally_rejects_ledger_text() -> None:

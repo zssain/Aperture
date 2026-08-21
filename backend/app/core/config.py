@@ -9,7 +9,7 @@ back to a silent (and wrong) default.
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Repo-root .env, resolved by absolute path so it loads regardless of the process's
@@ -72,9 +72,17 @@ class Settings(BaseSettings):
     # Google Gemini. The key is read from the repo-root .env (Gemini_api_Key,
     # matched case-insensitively). gemini-embedding-001 supports outputDimensionality,
     # so it is reduced to `embedding_dimension` to match the merchant catalogue column.
-    gemini_api_key: str | None = None
+    # Prefer the durable AIza-style key (Gemini_New_Api_Key); fall back to the older
+    # Gemini_api_Key. AIza keys are more reliable than short-lived OAuth tokens.
+    gemini_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("gemini_new_api_key", "gemini_api_key"),
+    )
     gemini_embedding_model_id: str = "gemini-embedding-001"
     gemini_model_id: str = "gemini-flash-lite-latest"
+    # OpenAI (chat completions) — an alternative notice LLM.
+    openai_api_key: str | None = None
+    openai_model_id: str = "gpt-4o-mini"
     llm_max_tokens: int = 1200
     secret_provider: str = "environment"
     aws_secret_id: str | None = None

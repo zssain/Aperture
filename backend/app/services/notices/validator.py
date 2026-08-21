@@ -30,7 +30,15 @@ _GUARANTEES = (
     "स्वीकृत किया जाएगा",
     "गारंटीकृत",
 )
-_APPROVAL = ("approved", "approval granted", "स्वीकृत", "मंजूर")
+# Approval language is forbidden in a decline / starter notice. Match the approval
+# words but EXCLUDE their negated forms, which are themselves decline language and were
+# previously false-flagged by a naive substring test: English "not approved",
+# "unapproved", "disapproved", and Hindi "अस्वीकृत" (अ + स्वीकृत) / "नामंजूर" (ना + मंजूर).
+_APPROVAL_RE = re.compile(
+    r"(?<!not )(?<!un)(?<!dis)approv(?:ed|al granted)"
+    r"|(?<!अ)स्वीकृत"
+    r"|(?<!ना)मंजूर"
+)
 _INTERNALS = (
     "threshold",
     "rule ",
@@ -92,9 +100,9 @@ def validate_notice(output: LLMNotice, context: NoticeContext) -> NoticeValidati
         if number and number not in allowed:
             errors.append(f"invented numeral: {match.strip()}")
     lowered = text.casefold()
-    if (context.outcome.startswith("DECLINE") or context.outcome == "APPROVE_STARTER") and any(
-        term in lowered for term in _APPROVAL
-    ):
+    if (
+        context.outcome.startswith("DECLINE") or context.outcome == "APPROVE_STARTER"
+    ) and _APPROVAL_RE.search(lowered):
         errors.append("approval language is incompatible with the outcome")
     if any(term in lowered for term in _GUARANTEES):
         errors.append("guarantee language is forbidden")

@@ -62,6 +62,10 @@ class ProviderRegistry:
             from app.core.providers.llm_gemini import GeminiLLMProvider
 
             registry.llms["gemini"] = GeminiLLMProvider(config)
+        elif config.llm_provider == "openai":
+            from app.core.providers.llm_openai import OpenAILLMProvider
+
+            registry.llms["openai"] = OpenAILLMProvider(config)
         elif config.llm_provider != "noop":
             raise ProviderNotConfigured(f"unknown LLM provider: {config.llm_provider}")
         return registry
