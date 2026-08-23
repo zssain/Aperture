@@ -13,10 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_context
 from app.core.context import RequestContext
 from app.db.session import get_session
-from app.schemas.case import CaseOut, EvidencePage, LineageOut
+from app.schemas.case import CaseOut, CashflowPointOut, EvidencePage, LineageOut
 from app.services.cases.assembler import (
     CaseNotFoundError,
     assemble_case,
+    case_cashflow,
     get_lineage,
     list_evidence,
 )
@@ -39,6 +40,18 @@ async def get_case(
 ) -> CaseOut:
     try:
         return await assemble_case(session, context.tenant_id, application_id)
+    except CaseNotFoundError as exc:
+        raise _not_found() from exc
+
+
+@router.get("/cases/{application_id}/cashflow", response_model=list[CashflowPointOut])
+async def get_cashflow(
+    application_id: uuid.UUID,
+    context: RequestContext = Depends(get_context),
+    session: AsyncSession = Depends(get_session),
+) -> list[CashflowPointOut]:
+    try:
+        return await case_cashflow(session, context.tenant_id, application_id)
     except CaseNotFoundError as exc:
         raise _not_found() from exc
 

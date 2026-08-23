@@ -17,6 +17,14 @@ from pydantic import BaseModel
 from app.schemas.queue import MetricOut
 
 
+class CashflowPointOut(BaseModel):
+    """One month of aggregated inflow/outflow, computed server-side over the full ledger."""
+
+    month: str  # "YYYY-MM"
+    inflow_paise: int
+    outflow_paise: int
+
+
 class ApplicantOut(BaseModel):
     id: uuid.UUID
     external_ref: str

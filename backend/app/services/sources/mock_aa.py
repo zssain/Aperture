@@ -102,6 +102,15 @@ class MockAccountAggregatorAdapter:
                 return
             drafts.append((when, txn_type, paise, narration, merchant))
 
+        # Monthly income baseline per persona. Obligations are derived as fractions of it so
+        # every synthetic applicant is cash-flow *plausible* (income comfortably covers rent +
+        # EMI + bills + discretionary), rather than a gig worker paying rent that dwarfs income.
+        income_base = {"SALARIED": 5_000_000, "GIG": 4_200_000, "BUSINESS": 12_000_000}[persona]
+        rent_base = round(income_base * 0.30)
+        emi_base = round(income_base * 0.18)
+        utility_base = round(income_base * 0.045)
+        discretionary_base = round(income_base * 0.17)
+
         month = date(start.year, start.month, 1)
         while month <= end_date:
             year, mon = month.year, month.month
@@ -110,33 +119,37 @@ class MockAccountAggregatorAdapter:
                 add(
                     _clamp_day(year, mon, 1 + rng.randint(0, 2)),
                     "CREDIT",
-                    5_000_000 + rng.randint(-50_000, 50_000),
+                    income_base + rng.randint(-50_000, 50_000),
                     "NEFT salary credit ACME TECHNOLOGIES",
                     "ACME PAYROLL",
                 )
             elif persona == "GIG":
-                for _ in range(rng.randint(6, 10)):
+                payouts = rng.randint(6, 10)
+                per_payout = income_base // payouts
+                for _ in range(payouts):
                     platform = rng.choice(_GIG_PLATFORMS)
                     add(
                         _clamp_day(year, mon, rng.randint(1, 27)),
                         "CREDIT",
-                        300_000 + rng.randint(-100_000, 200_000),
+                        per_payout + rng.randint(-per_payout // 4, per_payout // 4),
                         f"Weekly gig payout {platform.title()}",
                         platform,
                     )
             else:
-                for _ in range(rng.randint(2, 4)):
+                settlements = rng.randint(2, 4)
+                per_settlement = income_base // settlements
+                for _ in range(settlements):
                     add(
                         _clamp_day(year, mon, rng.randint(1, 27)),
                         "CREDIT",
-                        8_000_000 + rng.randint(-2_000_000, 3_000_000),
+                        per_settlement + rng.randint(-per_settlement // 3, per_settlement // 2),
                         "Client invoice settlement received",
                         "CLIENT SETTLEMENT",
                     )
 
-            rent = 1_500_000 + rng.randint(-20_000, 20_000)
-            emi = 1_200_000 + rng.randint(-10_000, 10_000)
-            utility = 200_000 + rng.randint(-50_000, 50_000)
+            rent = rent_base + rng.randint(-20_000, 20_000)
+            emi = emi_base + rng.randint(-10_000, 10_000)
+            utility = utility_base + rng.randint(-30_000, 30_000)
             telecom = 59_900 + rng.randint(-10_000, 10_000)
             add(_clamp_day(year, mon, 5), "DEBIT", rent, "House rent autopay", "URBAN RENTALS")
             add(_clamp_day(year, mon, 7), "DEBIT", emi, "HDFC personal loan EMI", "HDFC EMI")
@@ -148,11 +161,13 @@ class MockAccountAggregatorAdapter:
                 "Airtel prepaid mobile recharge",
                 "AIRTEL",
             )
-            for _ in range(rng.randint(8, 15)):
+            purchases = rng.randint(8, 15)
+            per_purchase = max(10_000, discretionary_base // purchases)
+            for _ in range(purchases):
                 add(
                     _clamp_day(year, mon, rng.randint(1, 27)),
                     "DEBIT",
-                    rng.randint(15_000, 250_000),
+                    per_purchase + rng.randint(-per_purchase // 2, per_purchase // 2),
                     "UPI purchase",
                     rng.choice(_MERCHANTS),
                 )

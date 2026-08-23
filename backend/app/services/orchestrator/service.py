@@ -102,6 +102,7 @@ async def _persist_decision(
     policy_decision: PolicyDecision,
     idempotency_key: str,
     supersedes_decision_id: uuid.UUID | None = None,
+    decided_at: datetime | None = None,
 ) -> Decision:
     """Persist assessments + decision + reasons and append the ledger entry, in ONE tx."""
     snapshot_id = snapshot.id
@@ -128,6 +129,10 @@ async def _persist_decision(
         ],
         is_final=routing == Routing.AUTOMATED.value,
     )
+    # The decisions table is append-only, so an explicit historical timestamp (used only by
+    # the demo backfill to date a synthetic past book) must be set before insert, never after.
+    if decided_at is not None:
+        decision.decided_at = decided_at
     session.add(decision)
     await session.flush()  # allocate decision.id for reasons + the ledger subject_id
 
@@ -195,6 +200,7 @@ async def decide(
     idempotency_key: str,
     supersedes_decision_id: uuid.UUID | None = None,
     generate_recourse: bool = True,
+    decided_at: datetime | None = None,
 ) -> DecisionResult:
     tenant_id = context.tenant_id
 
@@ -245,6 +251,7 @@ async def decide(
             policy_decision=policy_decision,
             idempotency_key=idempotency_key,
             supersedes_decision_id=supersedes_decision_id,
+            decided_at=decided_at,
         )
     except IntegrityError:
         # Lost the concurrent race on the unique idempotency index: return the winner.

@@ -113,6 +113,11 @@ const EVIDENCE = {
   next_cursor: null,
 };
 
+const CASHFLOW = [
+  { month: "2026-06", inflow_paise: 5_000_000, outflow_paise: 3_500_000 },
+  { month: "2026-07", inflow_paise: 5_100_000, outflow_paise: 3_400_000 },
+];
+
 const LINEAGE = {
   feature_key: "monthly_inflow_cv", version: "1", dtype: "float", window: "6m",
   formula_doc: "population CV of monthly income", null_policy: "mean_below_floor",
@@ -131,6 +136,7 @@ function mockFetch(caseData: CaseData | null, caseStatus = 200): void {
   const fetchMock = vi.fn(async (url: string | URL) => {
     const u = String(url);
     if (u.includes("/lineage")) return json(LINEAGE);
+    if (u.includes("/cashflow")) return json(CASHFLOW);
     if (u.includes("/evidence")) return json(EVIDENCE);
     if (caseStatus !== 200) return json({ detail: { code: "CASE_NOT_FOUND", message: "nope" } }, caseStatus);
     return json(caseData);

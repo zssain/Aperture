@@ -29,7 +29,13 @@ from app.models.application import Application
 from app.models.assessment import Assessment
 from app.models.consent import Consent
 from app.models.decision import Decision, DecisionReason, HumanReview, RecourseOption
-from app.models.enums import AssessmentKind, ReviewStatus, SourceType
+from app.models.enums import (
+    AssessmentKind,
+    EventDirection,
+    EvidenceEventType,
+    ReviewStatus,
+    SourceType,
+)
 from app.models.feature import FeatureSnapshot
 from app.models.ledger import LedgerEvent
 from app.models.policy import PolicyVersion
@@ -42,6 +48,7 @@ from app.schemas.case import (
     AssessmentOut,
     BureauOut,
     CaseOut,
+    CashflowPointOut,
     CitedEventOut,
     CounterfactualOut,
     CoverageChip,
@@ -690,6 +697,50 @@ def _clamp_limit(limit: int | None) -> int:
     if limit is None:
         return _DEFAULT_EVIDENCE_LIMIT
     return max(1, min(limit, _MAX_EVIDENCE_LIMIT))
+
+
+async def case_cashflow(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    application_id: uuid.UUID,
+    *,
+    months: int = 6,
+) -> list[CashflowPointOut]:
+    """Aggregate the applicant's transaction ledger into monthly inflow/outflow, server-side.
+
+    The evidence table is paginated, so aggregating it on the client only ever sees the first
+    page (the most recent transactions) and collapses a six-month chart to the latest month.
+    This computes the whole thing over the full ledger and returns the trailing ``months``.
+    """
+    application = await session.get(Application, application_id)
+    if application is None or application.tenant_id != tenant_id:
+        raise CaseNotFoundError(str(application_id))
+
+    events = list(
+        await session.scalars(
+            select(LedgerEvent).where(
+                LedgerEvent.tenant_id == tenant_id,
+                LedgerEvent.applicant_id == application.applicant_id,
+                LedgerEvent.event_type == EvidenceEventType.TRANSACTION,
+            )
+        )
+    )
+    buckets: dict[str, dict[str, int]] = {}
+    for event in events:
+        # A null amount is missing data, not ₹0 of flow — never fold it into a total.
+        if event.amount_paise is None or event.direction is None:
+            continue
+        key = event.occurred_at.strftime("%Y-%m")
+        bucket = buckets.setdefault(key, {"inflow": 0, "outflow": 0})
+        if event.direction is EventDirection.CREDIT:
+            bucket["inflow"] += event.amount_paise
+        elif event.direction is EventDirection.DEBIT:
+            bucket["outflow"] += event.amount_paise
+    ordered = sorted(buckets.items())[-months:]
+    return [
+        CashflowPointOut(month=key, inflow_paise=v["inflow"], outflow_paise=v["outflow"])
+        for key, v in ordered
+    ]
 
 
 async def list_evidence(

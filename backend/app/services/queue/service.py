@@ -712,7 +712,10 @@ async def list_queue(
     if resolved_view not in views:
         raise QueueAccessError(resolved_view)
 
-    resolved_sort = sort if sort in _SORTS else "waiting"
+    # Pending exception queues surface the longest-waiting case first; the "all decisions" and
+    # QA-sample ledgers are a chronological record, so they default to newest-decided first.
+    default_sort = "-waiting" if resolved_view in ("all-decisions", "qa-sample") else "waiting"
+    resolved_sort = sort if sort in _SORTS else default_sort
     page_size = _clamp_limit(limit)
 
     stmt = _base_select().where(Decision.tenant_id == tenant_id, _view_predicate(resolved_view))

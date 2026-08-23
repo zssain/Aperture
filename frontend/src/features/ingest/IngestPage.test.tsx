@@ -124,12 +124,16 @@ describe("IngestPage", () => {
     renderPage();
     await fillApplicant(user);
     await user.click(screen.getByLabelText(/Connect financial accounts/));
+    // Choosing a bank launches the Account Aggregator sign-in popup.
     await user.click(screen.getByLabelText("HDFC Bank"));
-    expect(screen.getByLabelText("Bank accounts")).not.toBeChecked();
-    expect(screen.getByLabelText(/explicitly grants this consent/)).not.toBeChecked();
-    await user.click(screen.getByLabelText("Bank accounts"));
-    await user.click(screen.getByLabelText(/explicitly grants this consent/));
-    await user.click(screen.getByRole("button", { name: "Connect and start pipeline" }));
+    await user.type(screen.getByLabelText("Registered mobile or customer ID"), "9876543210");
+    await user.click(screen.getByRole("button", { name: "Send OTP" }));
+    await user.type(screen.getByLabelText("One-time password"), "123456");
+    await user.click(screen.getByRole("button", { name: "Verify & continue" }));
+    // Consent screen: nothing is shared until the applicant ticks an account explicitly.
+    expect(screen.getByLabelText("Share bank account")).not.toBeChecked();
+    await user.click(screen.getByLabelText("Share bank account"));
+    await user.click(screen.getByRole("button", { name: "Approve & share" }));
 
     // The auto-open pauses ~2.4 s so the import summary can land first.
     expect(await screen.findByText("Case destination", {}, { timeout: 5_000 })).toBeVisible();
@@ -470,9 +474,12 @@ describe("IngestPage", () => {
     await fillApplicant(user);
     await user.click(screen.getByLabelText(/Connect financial accounts/));
     await user.click(screen.getByLabelText("HDFC Bank"));
-    await user.click(screen.getByLabelText("Bank accounts"));
-    await user.click(screen.getByLabelText(/explicitly grants this consent/));
-    await user.click(screen.getByRole("button", { name: "Connect and start pipeline" }));
+    await user.type(screen.getByLabelText("Registered mobile or customer ID"), "9876543210");
+    await user.click(screen.getByRole("button", { name: "Send OTP" }));
+    await user.type(screen.getByLabelText("One-time password"), "123456");
+    await user.click(screen.getByRole("button", { name: "Verify & continue" }));
+    await user.click(screen.getByLabelText("Share bank account"));
+    await user.click(screen.getByRole("button", { name: "Approve & share" }));
     expect(await screen.findByText("Fetching evidence: running")).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Leave ingest" }));

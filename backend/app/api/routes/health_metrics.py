@@ -16,10 +16,11 @@ from app.models.enums import AssessmentKind, OutcomeLabel, UserRole
 from app.models.outcome import Outcome
 from app.models.user import User
 from app.registries.credit_features import CREDIT_FEATURES
-from app.services.monitoring.calibration import calibration_metrics, discrimination, not_yet
+from app.services.monitoring.calibration import calibration_metrics, discrimination
 from app.services.monitoring.coverage_dist import coverage_distribution
 from app.services.monitoring.disparity import disparity_metrics
-from app.services.monitoring.drift import drift_metric
+from app.services.monitoring.drift import drift_metric, score_bins
+from app.services.monitoring.gating import MetricResult
 from app.services.monitoring.model_card import build_model_card, model_card_pdf
 from app.services.monitoring.overrides import override_metrics
 
@@ -90,12 +91,37 @@ async def _metrics(session: AsyncSession, tenant_id: uuid.UUID) -> dict[str, obj
         if any(rule.get("outcome") == "REVIEW_EVIDENCE" for rule in decision.fired_rules)
     )
     calibration_a = calibration_metrics(closed, "Model A")
-    model_b = not_yet("Model B", 0).model_dump()
+    # Model B is a challenger slot: a second model monitored beside the live one. It has no
+    # closed outcomes because it is not yet making production decisions, so it stays gated by
+    # design (not on an outcome-count countdown like Model A).
+    model_b = MetricResult(
+        status="NOT_YET_MEASURABLE",
+        n=0,
+        minimum_n=200,
+        reason=(
+            "Challenger model - not yet making production decisions, so it has no closed "
+            "outcomes to score. It begins measuring once it shadows live traffic."
+        ),
+    ).model_dump()
     discrimination_result = {
         key: value.model_dump() for key, value in discrimination(closed).items()
     }
+    # Real population-stability of the model's pd scores between an earlier reference window
+    # and the most recent window — an honest drift signal over genuine model outputs, not a
+    # placeholder. Split the decided pd scores at their time median into the two windows.
+    pd_by_time: list[tuple[datetime, float]] = []
+    for decision in decisions:
+        assessment = risk_by_snapshot.get(decision.feature_snapshot_id)
+        if assessment is not None and assessment.payload.get("pd") is not None:
+            pd_by_time.append((decision.decided_at, float(assessment.payload["pd"])))
+    pd_by_time.sort(key=lambda pair: pair[0])
+    midpoint = len(pd_by_time) // 2
+    expected_scores = [pd for _, pd in pd_by_time[:midpoint]]
+    actual_scores = [pd for _, pd in pd_by_time[midpoint:]]
     drift = {
-        "overall": drift_metric([0.1] * 10, [0.1] * 10, len(decisions)).model_dump(),
+        "overall": drift_metric(
+            score_bins(actual_scores), score_bins(expected_scores), len(decisions)
+        ).model_dump(),
         "threshold": 0.2,
         "threshold_label": "Operational convention, not a law",
     }

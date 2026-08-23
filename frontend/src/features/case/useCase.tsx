@@ -9,6 +9,7 @@ import { createContext, useContext, type ReactNode } from "react";
 import { cn } from "../../lib/cn";
 import { ApiError, api } from "../../lib/api";
 import type { MetricStatus } from "../queue/useQueue";
+import type { CashflowPoint } from "./CashflowTimeline";
 
 // --------------------------------------------------------------------------- #
 // Contract, mirrored from backend/app/schemas/case.py.
@@ -306,6 +307,14 @@ export function useEvidence(
     },
     initialPageParam: undefined,
     getNextPageParam: (last) => last.next_cursor ?? undefined,
+    staleTime: 10_000,
+  });
+}
+
+export function useCashflow(applicationId: string): UseQueryResult<CashflowPoint[], ApiError> {
+  return useQuery<CashflowPoint[], ApiError>({
+    queryKey: ["case-cashflow", applicationId],
+    queryFn: () => api.get<CashflowPoint[]>(`/api/v1/cases/${applicationId}/cashflow`),
     staleTime: 10_000,
   });
 }

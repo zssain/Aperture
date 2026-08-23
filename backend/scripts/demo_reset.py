@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import settings
 from app.db.session import SessionLocal
+from app.services.demo.backfill import seed_health_backfill
 from app.services.demo.seed import seed_demo
 from sqlalchemy import text
 
@@ -59,6 +60,10 @@ async def reset() -> None:
         await session.commit()
     print(f"Wiped demo data ({time.monotonic() - started:.1f}s). Reseeding…")
     await seed_demo()
+    # Seed the synthetic historical cohort so the model-health page can measure real
+    # calibration/drift/override numbers. Additive to the curated book; skipped when
+    # demo_backfill_size is 0.
+    await seed_health_backfill()
     print(f"Demo reset complete in {time.monotonic() - started:.1f}s.")
 
 

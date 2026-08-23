@@ -11,7 +11,7 @@ import { cn } from "../../../lib/cn";
 import { formatDate, formatPaise } from "../../../lib/format";
 import { CashflowTimeline, type CashflowPoint } from "../CashflowTimeline";
 import { sourceTypeLabel } from "../labels";
-import { useEvidence, type CaseData, type EvidenceEvent } from "../useCase";
+import { useCashflow, useEvidence, type CaseData, type EvidenceEvent } from "../useCase";
 
 const CATEGORIES = [
   "SALARY",
@@ -132,19 +132,17 @@ function TxnAmount({ event }: { event: EvidenceEvent }) {
 export function EvidenceTab({ data, applicationId }: { data: CaseData; applicationId: string }) {
   const [category, setCategory] = useState("");
 
-  // The chart reads the full (unfiltered) stream; the table follows the category filter.
-  const chartQuery = useEvidence(applicationId, "");
+  // The cash-flow chart is aggregated server-side over the FULL ledger (the evidence table
+  // is paginated, so aggregating its first page would collapse six months to the latest one).
+  // The table below follows the category filter and stays paginated.
+  const cashflowQuery = useCashflow(applicationId);
   const tableQuery = useEvidence(applicationId, category);
 
-  const chartRows = useMemo(
-    () => chartQuery.data?.pages.flatMap((page) => page.rows) ?? [],
-    [chartQuery.data],
-  );
   const tableRows = useMemo(
     () => tableQuery.data?.pages.flatMap((page) => page.rows) ?? [],
     [tableQuery.data],
   );
-  const cashflow = useMemo(() => aggregate(chartRows), [chartRows]);
+  const cashflow = cashflowQuery.data ?? [];
   const tableEmpty = tableRows.length === 0 && !tableQuery.isLoading;
 
   return (
@@ -156,16 +154,16 @@ export function EvidenceTab({ data, applicationId }: { data: CaseData; applicati
 
       <section aria-label="Cash flow" className="space-y-2">
         <h2 className="eyebrow">Cash flow · last 6 months</h2>
-        {chartQuery.isError ? (
-          chartQuery.error.status === 403 ? (
-            <PermissionDenied reason={chartQuery.error.message} />
+        {cashflowQuery.isError ? (
+          cashflowQuery.error.status === 403 ? (
+            <PermissionDenied reason={cashflowQuery.error.message} />
           ) : (
             <ErrorState
               title="Could not load cash flow"
-              message={chartQuery.error.message}
-              correlationId={chartQuery.error.correlationId}
+              message={cashflowQuery.error.message}
+              correlationId={cashflowQuery.error.correlationId}
               onRetry={() => {
-                void chartQuery.refetch();
+                void cashflowQuery.refetch();
               }}
             />
           )

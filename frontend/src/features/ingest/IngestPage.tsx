@@ -7,6 +7,7 @@ import { OfflineBanner } from "../../components/ui/OfflineBanner";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { ApplicantForm, type ApplicantErrors } from "./ApplicantForm";
+import { BankConsentModal, type AaConsentResult } from "./BankConsentModal";
 import { BankPicker, DEMO_BANKS } from "./BankPicker";
 import { ConsentStep } from "./ConsentStep";
 import { DocumentUpload } from "./DocumentUpload";
@@ -66,6 +67,8 @@ export function IngestPage() {
   const [errors, setErrors] = useState<ApplicantErrors>({});
   const [path, setPath] = useState<EvidencePath | null>(null);
   const [bankId, setBankId] = useState<string | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [signInNotice, setSignInNotice] = useState<string | undefined>();
   const [consentGranted, setConsentGranted] = useState(false);
   const [scopes, setScopes] = useState<SourceType[]>([]);
   const [purpose, setPurpose] = useState("Credit underwriting");
@@ -135,6 +138,50 @@ export function IngestPage() {
     const next = validateApplicant(applicant);
     setErrors(next);
     return Object.keys(next).length === 0;
+  }
+
+  function openBankSignIn(): void {
+    // Launch the Account Aggregator sign-in popup, but only once the applicant details are
+    // complete (we need them to create the case). If they are missing, say so right here
+    // instead of failing silently — the form errors themselves are above the fold.
+    if (!validApplicant()) {
+      setSignInNotice("Add the applicant's details at the top of the page before signing in to a bank.");
+      return;
+    }
+    setSignInNotice(undefined);
+    setAuthOpen(true);
+  }
+
+  function handlePickBank(id: string): void {
+    setBankId(id);
+    connect.reset();
+    openBankSignIn();
+  }
+
+  function handleAaApprove(result: AaConsentResult): void {
+    // Consent was approved inside the AA popup; mirror it into the recorded artefact and start
+    // the pipeline with exactly the scopes the applicant ticked.
+    setConsentGranted(true);
+    setScopes(result.scopes);
+    setPurpose(result.purpose);
+    setExpiresOn(result.expiresOn);
+    setConsentError(undefined);
+    setAuthOpen(false);
+    connect.mutate(
+      {
+        applicant,
+        consentGranted: true,
+        purpose: result.purpose,
+        scopes: result.scopes,
+        expiresAt: new Date(`${result.expiresOn}T23:59:59Z`).toISOString(),
+      },
+      {
+        onSuccess: (created) => {
+          setIntake(created);
+          setJobId(created.job_id);
+        },
+      },
+    );
   }
 
   function submitConnect(granted: boolean): void {
@@ -210,7 +257,41 @@ export function IngestPage() {
 
       {path === "connect" ? (
         <>
-          <BankPicker selected={bankId} disabled={busy} onChange={setBankId} />
+          <BankPicker selected={bankId} disabled={busy} onChange={handlePickBank} />
+          {selectedBank ? (
+            <div className="rounded border border-border bg-surface p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-muted">
+                  {consentGranted
+                    ? `Consent captured from ${selectedBank.name} via the Account Aggregator.`
+                    : `The applicant authorises sharing at ${selectedBank.name} — Aperture never sees their credentials.`}
+                </p>
+                <Button
+                  variant={consentGranted ? "secondary" : "primary"}
+                  className="ml-auto"
+                  disabled={busy || !online}
+                  onClick={openBankSignIn}
+                >
+                  {consentGranted ? "Review consent" : `Sign in at ${selectedBank.name}`}
+                </Button>
+              </div>
+              {signInNotice ? (
+                <p role="status" className="mt-2 text-sm text-negative">
+                  {signInNotice}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          <BankConsentModal
+            open={authOpen}
+            bank={selectedBank}
+            applicantName={applicant.displayName}
+            purpose={purpose}
+            expiresOn={expiresOn}
+            busy={connect.isPending}
+            onOpenChange={setAuthOpen}
+            onApprove={handleAaApprove}
+          />
           <ConsentStep
             granted={consentGranted}
             scopes={scopes}

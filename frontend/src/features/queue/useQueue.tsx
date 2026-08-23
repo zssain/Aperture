@@ -179,6 +179,12 @@ export function sortStorageKey(userId: string, view: string): string {
   return `aperture:queue-sort:${userId}:${view}`;
 }
 
+// Pending exception queues surface the longest-waiting case first; the "all decisions" and
+// QA-sample ledgers are a chronological record, so they default to newest-decided first.
+export function defaultSort(view: string): string {
+  return view === "all-decisions" || view === "qa-sample" ? "-waiting" : "waiting";
+}
+
 export function loadSort(userId: string, view: string): string {
   try {
     const stored = window.localStorage.getItem(sortStorageKey(userId, view));
@@ -186,7 +192,7 @@ export function loadSort(userId: string, view: string): string {
   } catch {
     // localStorage unavailable (private mode / SSR) — fall through to the default.
   }
-  return "waiting";
+  return defaultSort(view);
 }
 
 export function saveSort(userId: string, view: string, sort: string): void {

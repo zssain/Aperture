@@ -100,6 +100,11 @@ class Settings(BaseSettings):
     aws_secret_id: str | None = None
     kms_key_arn: str | None = None
     demo_seed_enabled: bool = False
+    # Size of the synthetic *historical* cohort seeded after the curated demo book so the
+    # model-health page has real closed outcomes to measure (calibration needs 200 closed
+    # outcomes, drift needs 100 decisions). 0 disables the backfill entirely. See
+    # services/demo/backfill.py.
+    demo_backfill_size: int = 240
 
     # Raw evidence is short lived and is never served from the application web root.
     upload_directory: Path = Path("/tmp/aperture-uploads")

@@ -5,6 +5,23 @@ import math
 from app.services.monitoring.gating import MetricResult
 
 
+def score_bins(scores: list[float], bins: int = 10) -> list[float]:
+    """Bin scores in [0, 1] into equal-width deciles and return the proportion per bin.
+
+    Turns a real distribution of model pd scores into the ``actual``/``expected`` vectors
+    :func:`population_stability_index` compares, so the drift metric measures a genuine
+    population shift between two windows rather than a placeholder.
+    """
+    counts = [0] * bins
+    for score in scores:
+        index = min(int(max(0.0, min(score, 1.0)) * bins), bins - 1)
+        counts[index] += 1
+    total = len(scores)
+    if total == 0:
+        return [0.0] * bins
+    return [count / total for count in counts]
+
+
 def population_stability_index(actual: list[float], expected: list[float]) -> float:
     if len(actual) != len(expected):
         raise ValueError("actual and expected distributions must have equal bins")

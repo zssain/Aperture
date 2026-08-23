@@ -69,6 +69,9 @@ DEMO_EMAILS: dict[UserRole, str] = {
     UserRole.AUDITOR: "auditor@aperture.com",
 }
 ROOT = Path(__file__).resolve().parents[4]
+# The persona that leads the "all decisions" ledger (newest-first). Asha Pawar — the flagship
+# thin-file gig-worker approve-starter case.
+HERO_APPLICANT_REF = "APL-1093"
 
 
 class DemoEmbeddingProvider:
@@ -450,6 +453,11 @@ async def seed_demo() -> None:
                 )
             )
             if existing is None:
+                # The flagship persona (Asha) leads the all-decisions ledger: give her decision
+                # the newest timestamp so she sits at the top of the newest-first view. The
+                # margin clears the later redecision events without reaching a full hour (which
+                # would only change her "waiting" label from "< 1h").
+                lead = PERSONAS[index].ref == HERO_APPLICANT_REF
                 await decide(
                     session,
                     context,
@@ -457,6 +465,7 @@ async def seed_demo() -> None:
                     as_of=started,
                     idempotency_key=f"demo-initial-{index + 1:02d}",
                     generate_recourse=True,
+                    decided_at=started + timedelta(minutes=5) if lead else None,
                 )
 
         transition_index = next(
