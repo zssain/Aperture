@@ -10,8 +10,10 @@ __pycache__/
 
 # Node
 node_modules/
-dist/
-coverage/
+# Anchored to the frontend: an unanchored `dist/` / `coverage/` also matched
+# backend/app/services/coverage/ and silently dropped a real source package.
+/frontend/dist/
+/frontend/coverage/
 .coverage
 .coverage.*
 playwright-report/

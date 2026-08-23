@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 
 import { Button } from "../../components/ui/Button";
+import { UploadInfo } from "./UploadInfo";
 import type { IngestionResult } from "./useIngest";
 
 interface DocumentUploadProps {
@@ -33,9 +34,12 @@ export function DocumentUpload({
     <section aria-labelledby="upload-heading" className="rounded border border-border bg-surface p-5">
       <div className="mb-4">
         <p className="eyebrow">Step 3 · Statement upload</p>
-        <h2 id="upload-heading" className="text-heading font-semibold text-ink">
-          Upload financial evidence
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 id="upload-heading" className="text-heading font-semibold text-ink">
+            Upload financial evidence
+          </h2>
+          <UploadInfo />
+        </div>
         <p id="file-rules" className="mt-1 text-sm text-muted">
           Accepted: UTF-8 CSV with Date, Description, Amount (Balance optional), or PDF. Maximum
           10 MB, 20,000 transaction rows, and 50 PDF pages.

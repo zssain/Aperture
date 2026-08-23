@@ -1,0 +1,19 @@
+{
+  "models": {
+    "benchmark-v1": {
+      "kind": "benchmark",
+      "artifact_path": "ml/artifacts/benchmark_v1.joblib",
+      "artifact_sha256": "172bb70313798835be9fed0beaa2bb3d9a91c6389471270bc1259ac1d63b9376",
+      "feature_schema_version": "uci-default-v1",
+      "calibration_status": "CALIBRATED",
+      "metrics_path": "ml/artifacts/benchmark_v1.metrics.json"
+    },
+    "cashflow-scorecard-v1": {
+      "kind": "scorecard",
+      "artifact_path": "ml/scorecard/cashflow_scorecard_v1.py",
+      "artifact_sha256": "5b26f49f9e8d5fccd8d4b98b2da5cd5048985f06b3f6c0b4e93ba0a3fb1f16bc",
+      "feature_schema_version": "features-v1",
+      "calibration_status": "UNCALIBRATED"
+    }
+  }
+}

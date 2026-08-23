@@ -1,2 +1,8 @@
+# Ignore training scratch by default, but keep the small deployable artifacts the app
+# needs at runtime (risk registry + benchmark model + metrics). Required for a
+# self-contained image; the large licensed dataset stays out via ml/data.
 *
 !.gitignore
+!registry.json
+!benchmark_v1.joblib
+!benchmark_v1.metrics.json
