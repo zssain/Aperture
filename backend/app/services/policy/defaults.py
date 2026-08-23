@@ -62,6 +62,10 @@ def seed_policy_v2() -> PolicyRules:
     changes that lift straight-through approvals for the thin-file mission without
     lending on less evidence:
 
+      - cov_mid 55 -> 50: a low-PD applicant with decent (50%+) evidence earns STANDARD
+        terms — a bigger, cheaper, longer loan — instead of only a small STARTER one.
+        Coverage is observed evidence completeness, not a risk estimate, so this expands
+        access without loosening any risk guard.
       - cov_high 75 -> 70: a well-evidenced thin-file applicant reaches the best
         (ENHANCED) terms a little sooner. Still demands strong evidence; only widens who
         earns the good rate.
@@ -76,6 +80,7 @@ def seed_policy_v2() -> PolicyRules:
     return seed_policy_v1().model_copy(
         update={
             "policy_version": "policy-v2",
+            "cov_mid": 50,
             "cov_high": 70,
             "mandatory_review_ceiling_paise": 30_000_000,  # Rs 300,000
             "exploration_margin": 0.05,

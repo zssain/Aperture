@@ -38,15 +38,16 @@ def test_seed_policy_v2_is_valid_and_keeps_the_core_risk_guards() -> None:
     uncalibrated; v2 only widens access and the learning cohort."""
     v1, v2 = seed_policy_v1(), seed_policy_v2()
     assert validate(v2).ok, validate(v2).errors
-    guards = lambda p: (  # noqa: E731
-        p.min_coverage,
-        p.pd_enhanced,
-        p.pd_standard,
-        p.pd_decline_threshold,
-        p.cov_mid,
+    # The core RISK guards — the PD thresholds and the coverage floor — stay put while
+    # the PD is uncalibrated.
+    assert (v2.min_coverage, v2.pd_enhanced, v2.pd_standard, v2.pd_decline_threshold) == (
+        v1.min_coverage,
+        v1.pd_enhanced,
+        v1.pd_standard,
+        v1.pd_decline_threshold,
     )
-    assert guards(v1) == guards(v2)
-    # The deliberate, defensible changes.
+    # The deliberate, defensible changes: wider access + a wider learning cohort.
+    assert v2.cov_mid < v1.cov_mid
     assert v2.cov_high < v1.cov_high
     assert v2.mandatory_review_ceiling_paise > v1.mandatory_review_ceiling_paise
     assert v2.exploration_budget > v1.exploration_budget
