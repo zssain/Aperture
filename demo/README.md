@@ -12,14 +12,14 @@ make demo-reset        # wipe + reseed the full demo book (~3 s) and regenerate 
 make demo-check        # preflight: prove the live worker path works (verification CLEAR)
 ```
 
-Sign-in accounts (all use the password printed by the reset):
+Sign-in accounts (all use the password `123456`):
 
 | Email | Role |
 |---|---|
-| credit-analyst@demo.aperture.test | Works the queue |
-| credit-policy-owner@demo.aperture.test | Policy Studio + health |
-| fraud-reviewer@demo.aperture.test | Fraud queue |
-| auditor@demo.aperture.test | Read-only + replay |
+| creditanalyst@aperture.com | Works the queue |
+| policyowner@aperture.com | Policy Studio + health |
+| frawdreviewer@aperture.com | Fraud queue |
+| auditor@aperture.com | Read-only + replay |
 
 ## The seeded book (what the queue shows after reset)
 

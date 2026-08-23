@@ -15,12 +15,12 @@ interface SignInLocationState {
 /** Local sandbox credentials, shown only in dev builds (stripped from production
  * bundles). They match the accounts created by `make demo-reset`. */
 const DEMO_ACCOUNTS: Array<{ label: string; email: string }> = [
-  { label: "Credit analyst", email: "credit-analyst@demo.aperture.test" },
-  { label: "Policy owner", email: "credit-policy-owner@demo.aperture.test" },
-  { label: "Fraud reviewer", email: "fraud-reviewer@demo.aperture.test" },
-  { label: "Auditor", email: "auditor@demo.aperture.test" },
+  { label: "Credit analyst", email: "creditanalyst@aperture.com" },
+  { label: "Policy owner", email: "policyowner@aperture.com" },
+  { label: "Fraud reviewer", email: "frawdreviewer@aperture.com" },
+  { label: "Auditor", email: "auditor@aperture.com" },
 ];
-const DEMO_PASSWORD = "Demo-Only-Strong-Passw0rd!";
+const DEMO_PASSWORD = "123456";
 
 interface FieldErrors {
   email?: string;

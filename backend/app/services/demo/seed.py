@@ -53,7 +53,15 @@ from app.services.policy.defaults import seed_policy_v1
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-DEMO_PASSWORD = "Demo-Only-Strong-Passw0rd!"
+DEMO_PASSWORD = "123456"  # sandbox-only demo credential
+# Explicit per-role sign-in emails (sandbox only). Not derived from the role name so
+# they can read however the demo wants.
+DEMO_EMAILS: dict[UserRole, str] = {
+    UserRole.CREDIT_ANALYST: "creditanalyst@aperture.com",
+    UserRole.CREDIT_POLICY_OWNER: "policyowner@aperture.com",
+    UserRole.FRAUD_REVIEWER: "frawdreviewer@aperture.com",
+    UserRole.AUDITOR: "auditor@aperture.com",
+}
 ROOT = Path(__file__).resolve().parents[4]
 
 
@@ -248,7 +256,7 @@ async def seed_demo() -> None:
             await session.flush()
         users: dict[UserRole, User] = {}
         for role in UserRole:
-            email = f"{role.value.casefold().replace('_', '-')}@demo.aperture.test"
+            email = DEMO_EMAILS[role]
             user = await session.scalar(
                 select(User).where(User.tenant_id == tenant.id, User.email == email)
             )

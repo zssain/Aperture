@@ -25,8 +25,8 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 BASE = "http://localhost:8000/api/v1"
-EMAIL = "credit-analyst@demo.aperture.test"
-PASSWORD = "Demo-Only-Strong-Passw0rd!"
+EMAIL = "creditanalyst@aperture.com"
+PASSWORD = "123456"  # sandbox-only demo credential
 
 
 def _fail(message: str) -> None:

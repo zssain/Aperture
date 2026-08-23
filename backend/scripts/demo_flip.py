@@ -13,8 +13,8 @@ import time
 import httpx
 
 BASE = "http://localhost:8000/api/v1"
-EMAIL = "credit-analyst@demo.aperture.test"
-PASSWORD = "Demo-Only-Strong-Passw0rd!"
+EMAIL = "creditanalyst@aperture.com"
+PASSWORD = "123456"  # sandbox-only demo credential
 
 
 def main() -> None:
