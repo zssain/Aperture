@@ -59,10 +59,14 @@ for _ in $(seq 1 60); do
   sleep 5
 done
 
-echo "==> 6/6  Seeding the demo book"
-sudo -E docker compose $COMPOSE run --rm api python scripts/seed_demo.py || {
-  echo "!!  Seed failed — the DB may still be migrating. Re-run this once it settles:"
-  echo "    cd $DIR && sudo -E PUBLIC_URL=$PUBLIC_URL docker compose $COMPOSE run --rm api python scripts/seed_demo.py"
+echo "==> 6/6  Resetting to a clean demo book"
+# demo_reset wipes tenant data (keeping migrations + catalogue) and reseeds, so every
+# redeploy is a known-good state — and any earlier uploads are cleared, so a re-upload
+# of the same file is a fresh case rather than an "already ingested" no-op. It is
+# idempotent on a first run (the tables are simply empty before the reseed).
+sudo -E docker compose $COMPOSE run --rm api python scripts/demo_reset.py || {
+  echo "!!  Reset failed — the DB may still be migrating. Re-run this once it settles:"
+  echo "    cd $DIR && sudo -E PUBLIC_URL=$PUBLIC_URL docker compose $COMPOSE run --rm api python scripts/demo_reset.py"
 }
 
 echo

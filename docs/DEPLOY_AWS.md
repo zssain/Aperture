@@ -70,9 +70,13 @@ curl -fsSL https://raw.githubusercontent.com/zssain/Aperture/demo-polish/deploy/
 ```
 
 It installs Docker, adds swap (a t3.micro only has 1 GB RAM), fetches the code, builds
-the containers, runs the database migrations, and seeds the demo. **The first build takes
-about 10–15 minutes on this size** — that's normal. When it finishes it prints your URL
-and the logins.
+the containers, runs the database migrations, and resets to a clean demo book. **The
+first build takes about 10–15 minutes on this size** — that's normal. When it finishes
+it prints your URL and the logins.
+
+> Re-running this exact command later is also how you **update** the box: it pulls the
+> latest code, rebuilds, and resets to a clean demo book (so any files you uploaded
+> earlier are cleared and can be uploaded again as fresh cases).
 
 ---
 
