@@ -6,6 +6,7 @@ RUN if [ -n "$UV_EXTRAS" ]; then uv sync --frozen --no-dev --extra "$UV_EXTRAS";
 ARG EMBEDDING_MODEL_ID="sentence-transformers/all-MiniLM-L6-v2"
 RUN if [ "$UV_EXTRAS" = "embeddings" ]; then .venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('$EMBEDDING_MODEL_ID', cache_folder='/app/.cache/huggingface')"; fi
 COPY backend/app ./app
+COPY backend/scripts ./scripts
 COPY backend/alembic ./alembic
 COPY backend/alembic.ini ./
 COPY ml/__init__.py /ml/__init__.py
@@ -17,7 +18,9 @@ RUN useradd --system --uid 10001 aperture
 WORKDIR /app
 COPY --from=build /app /app
 COPY --from=build /ml /ml
-RUN chown -R aperture:aperture /app/.cache
+# The huggingface cache only exists when built with the embeddings extra; create it
+# unconditionally so the lean (no-embeddings) build works too.
+RUN mkdir -p /app/.cache && chown -R aperture:aperture /app/.cache
 ENV PATH=/app/.venv/bin:$PATH PYTHONUNBUFFERED=1 HF_HOME=/app/.cache/huggingface HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 USER aperture
 EXPOSE 8000

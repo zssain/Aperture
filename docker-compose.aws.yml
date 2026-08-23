@@ -1,0 +1,36 @@
+# Single-box AWS override — layer on top of the production compose:
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.aws.yml up -d
+#
+# It makes the stack fit a free-tier t3.micro (1 GB RAM) and work over plain HTTP:
+#   - lean API image (no torch / sentence-transformers) + EMBEDDING_PROVIDER=noop,
+#   - SESSION_COOKIE_SECURE=false so the session cookie works without TLS,
+#   - ENVIRONMENT=demo (not "production") so the demo endpoints are enabled,
+#   - demo seed + events enabled,
+#   - the frontend published on port 80 (so the URL is just http://<public-ip>).
+#
+# PUBLIC_URL must be the box's URL, e.g. http://<EC2-public-ip>; the bootstrap script
+# sets it automatically from instance metadata. Once you add TLS (see the runbook),
+# set PUBLIC_URL to https://… and SESSION_COOKIE_SECURE back to "true".
+services:
+  api:
+    build:
+      args:
+        UV_EXTRAS: ""
+    environment:
+      EMBEDDING_PROVIDER: noop
+      ENVIRONMENT: demo
+      SESSION_COOKIE_SECURE: "false"
+      DEMO_SEED_ENABLED: "true"
+      DEMO_EVENTS_ENABLED: "true"
+      FRONTEND_ORIGIN: ${PUBLIC_URL:-http://localhost}
+  worker:
+    environment:
+      EMBEDDING_PROVIDER: noop
+      ENVIRONMENT: demo
+      SESSION_COOKIE_SECURE: "false"
+      DEMO_SEED_ENABLED: "true"
+      DEMO_EVENTS_ENABLED: "true"
+      FRONTEND_ORIGIN: ${PUBLIC_URL:-http://localhost}
+  frontend:
+    ports: ["80:8080"]
