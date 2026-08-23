@@ -10,8 +10,8 @@ import hashlib
 import io
 import itertools
 import re
-from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from dataclasses import dataclass, field, replace
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from pypdf import PdfReader
@@ -142,6 +142,26 @@ class DocumentAdapter:
         raise UnsupportedDocumentError("Unsupported document type; upload CSV or PDF.")
 
     # --- CSV ---------------------------------------------------------------- #
+    @staticmethod
+    def _preserve_statement_order(events: list[NormalizedEvent]) -> list[NormalizedEvent]:
+        """Bank statements are date-only, so many transactions share a day and a
+        midnight timestamp. Downstream ordering (notably the D5 balance-arithmetic
+        check) sorts by timestamp; with ties it would scramble same-day rows and
+        compare each balance against the wrong neighbour, false-flagging a genuine
+        statement as tampered. Statement rows ARE chronological, so stamp each with an
+        increasing intra-day second offset in file order — making the ledger order
+        match the statement's true order without changing any amount or the day."""
+        per_day: dict[date, int] = {}
+        ordered: list[NormalizedEvent] = []
+        for event in events:
+            day = event.occurred_at.date()
+            offset = per_day.get(day, 0)
+            per_day[day] = offset + 1
+            ordered.append(
+                replace(event, occurred_at=event.occurred_at + timedelta(seconds=offset))
+            )
+        return ordered
+
     def _parse_csv(self, file_bytes: bytes) -> ParsedDocument:
         try:
             text = file_bytes.decode("utf-8-sig")
@@ -191,7 +211,7 @@ class DocumentAdapter:
             balance_consistent=_balances_reconcile(balances),
         )
         return ParsedDocument(
-            events=events,
+            events=self._preserve_statement_order(events),
             rejected=rejected,
             provenance=provenance,
             content_hash=hashlib.sha256(file_bytes).hexdigest(),
@@ -263,7 +283,7 @@ class DocumentAdapter:
         metadata = {str(k): str(v) for k, v in (dict(reader.metadata or {})).items()}
         provenance = check_pdf_provenance(metadata, is_signed=_pdf_is_signed(file_bytes))
         return ParsedDocument(
-            events=events,
+            events=self._preserve_statement_order(events),
             rejected=rejected,
             provenance=provenance,
             content_hash=hashlib.sha256(file_bytes).hexdigest(),

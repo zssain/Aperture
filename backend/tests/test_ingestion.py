@@ -339,6 +339,31 @@ def test_bank_statement_csv_with_debit_credit_columns() -> None:
     assert len(result.rejected) == 3
 
 
+def test_same_day_rows_keep_statement_order_so_balances_reconcile() -> None:
+    """Real statements are date-only with many rows per day; the balance reconciles in
+    file order. The parser must stamp same-day rows with increasing timestamps so any
+    downstream timestamp sort (D5 balance arithmetic) matches file order and does not
+    false-flag a genuine statement as tampered."""
+    csv = (
+        "Table 1\n"
+        "Date,Details,Ref No/Cheque No,Debit,Credit,Balance,\n"
+        '01/11/2025," UPI/DR/1/Blinkit",,411.00,,847.74,\n'
+        '01/11/2025," UPI/DR/2/Manoj",,38.00,,809.74,\n'
+        '01/11/2025," UPI/CR/3/Fatima",,,500.00,1309.74,\n'
+        '01/11/2025," UPI/DR/4/Newudip",,330.00,,979.74,\n'
+    )
+    events = DocumentAdapter().parse(csv.encode(), "bank statement.csv").events
+    assert len(events) == 4
+    # Distinct, strictly increasing timestamps preserve the file (chronological) order.
+    stamps = [event.occurred_at for event in events]
+    assert stamps == sorted(stamps) and len(set(stamps)) == 4
+    # In that order every consecutive balance reconciles — so D5 stays CLEAR.
+    for prev, cur in pairwise(sorted(events, key=lambda event: event.occurred_at)):
+        assert prev.balance_paise is not None and cur.balance_paise is not None
+        signed = cur.amount_paise if cur.direction == EventDirection.CREDIT else -cur.amount_paise
+        assert cur.balance_paise == prev.balance_paise + signed
+
+
 def test_headerless_csv_names_the_expected_columns() -> None:
     with pytest.raises(SchemaError) as excinfo:
         DocumentAdapter().parse(b"foo,bar\n1,2\n", "x.csv")

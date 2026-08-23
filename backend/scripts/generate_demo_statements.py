@@ -15,7 +15,7 @@ Usage:  uv run python scripts/generate_demo_statements.py
 """
 
 import sys
-from datetime import UTC, datetime, time
+from datetime import UTC, datetime, time, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -27,6 +27,60 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "demo" / "statements"
 
 _PDF_LINES_PER_PAGE = 52
+
+
+def _ideal_real_bank_csv(anchor: datetime) -> str:
+    """A realistic, real-bank-format statement (Kotak/HDFC style: a preamble row,
+    Date/Details/Debit/Credit/Balance columns, DD/MM/YYYY dates, several transactions
+    per day) whose running balance reconciles exactly. Unlike a churn account, it has
+    recognizable salary, rent, EMI, electricity and mobile-recharge lines, so it flows
+    through classification into a fully-populated, meaningful assessment. Dated to end a
+    few days before `anchor` so the evidence is fresh.
+
+    Each row is (days_ago, debit_or_credit, rupees, details). Rows are emitted oldest
+    first with a live running balance — the same thing D5 later checks."""
+    monthly: list[tuple[int, str, float, str]] = [
+        (28, "C", 68_500.00, "NEFT CR SALARY CREDIT-ACME TECHNOLOGIES PVT LTD"),
+        (26, "D", 18_000.00, "UPI/DR/HOUSERENT/house rent to landlord/UPI"),
+        (25, "D", 815.00, "UPI/DR/Blinkit/blinkit groceries/UPI"),
+        (25, "D", 420.00, "UPI/DR/Swiggy/swiggy order/UPI"),
+        (23, "D", 9_500.00, "UPI/DR/HDFCLOAN/HDFC personal loan EMI/UPI"),
+        (18, "D", 1_240.00, "UPI/DR/BESCOM/BESCOM electricity bill payment/UPI"),
+        (16, "D", 599.00, "UPI/DR/Airtel/Airtel mobile recharge/UPI"),
+        (14, "D", 1_299.00, "UPI/DR/AmazonPay/Amazon India purchase/UPI"),
+        (12, "D", 2_100.00, "UPI/DR/BigBasket/bigbasket groceries/UPI"),
+        (9, "D", 560.00, "UPI/DR/Zomato/zomato order/UPI"),
+        (8, "C", 560.00, "UPI/CR/Zomato/zomato refund/UPI"),
+        (6, "D", 350.00, "UPI/DR/DMart/UPI purchase pos/UPI"),
+        (3, "D", 180.00, "UPI/DR/QuickMart/UPI purchase/UPI"),
+    ]
+    rows: list[tuple[object, int, str, float, str]] = []
+    seq = 0
+    for month in reversed(range(3)):  # oldest month first
+        for day_in_month, kind, rupees, details in monthly:
+            days_ago = 30 * month + day_in_month
+            rows.append(((anchor - timedelta(days=days_ago)).date(), seq, kind, rupees, details))
+            seq += 1
+    # Oldest first; the emission index keeps same-day rows in listing order.
+    rows.sort(key=lambda r: (r[0], r[1]))
+
+    balance = 25_000.00
+    lines = [
+        "Table 1",
+        "Date,Details,Ref No/Cheque No,Debit,Credit,Balance,",
+    ]
+    for occurred, _seq, kind, rupees, details in rows:
+        balance += rupees if kind == "C" else -rupees
+        # No thousands separators: an unquoted comma inside a numeric cell would split
+        # the column. Real per-transaction amounts are written comma-free.
+        debit = f"{rupees:.2f}" if kind == "D" else ""
+        credit = f"{rupees:.2f}" if kind == "C" else ""
+        lines.append(
+            f'{occurred.strftime("%d/%m/%Y")},"{details}",,{debit},{credit},{balance:.2f},'
+        )
+    lines.append(",,,,,,")
+    lines.append("This is a computer generated statement and does not require a signature.,,,,,,")
+    return "\n".join(lines) + "\n"
 
 
 def _spec(ref: str) -> PersonaSpec:
@@ -155,6 +209,9 @@ def main() -> None:
     (OUT / "meera_tampered.pdf").write_bytes(
         _statement_pdf(meera, title="Account Statement", producer="LibreOffice 7.5")
     )
+
+    # A real-bank-format statement that decides cleanly end to end.
+    (OUT / "ideal_salaried_statement.csv").write_text(_ideal_real_bank_csv(anchor))
 
     for name in sorted(path.name for path in OUT.iterdir()):
         print(f"wrote demo/statements/{name}")
