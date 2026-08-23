@@ -231,14 +231,16 @@ async def run_assessments(
                         event_id=e.id,
                         occurred_at=e.occurred_at,
                         direction=e.direction,
-                        amount_paise=e.amount_paise or 0,
+                        amount_paise=e.amount_paise,
                         balance_paise=e.balance_paise,
                         description=e.description,
                         counterparty_hash=e.counterparty_hash,
                         source_snapshot_id=e.source_snapshot_id,
                     )
                     for e in events
-                    if e.direction is not None
+                    # A null amount is missing data, not a ₹0 transaction: excluding it
+                    # keeps ghost zeros out of the fraud detectors (concentration, bursts).
+                    if e.direction is not None and e.amount_paise is not None
                 ],
                 declared=DeclaredApplication(
                     application_id=application.id,

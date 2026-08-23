@@ -210,6 +210,11 @@ async def decide(
     if application is None or application.tenant_id != tenant_id:
         raise ApplicationNotFoundError("application not found")
 
+    # A missing requested amount is unknowable input, not a ₹0 loan. Fail honestly
+    # (invariant 2) rather than assess affordability/terms against a fabricated zero.
+    if application.requested_amount_paise is None:
+        raise SystemUnavailableError("requested_amount")
+
     snapshot = await compute_snapshot(
         session, tenant_id=tenant_id, application_id=application_id, as_of=as_of
     )

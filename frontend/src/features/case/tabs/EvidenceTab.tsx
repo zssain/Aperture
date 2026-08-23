@@ -36,12 +36,15 @@ function monthKey(iso: string): string {
   return iso.slice(0, 7);
 }
 
-function aggregate(events: EvidenceEvent[]): CashflowPoint[] {
+export function aggregate(events: EvidenceEvent[]): CashflowPoint[] {
   const byMonth = new Map<string, { inflow: number; outflow: number }>();
   for (const event of events) {
+    // A null amount is missing data, not ₹0 of flow. Skip it from the aggregate the
+    // same way the transaction table renders it as "—"; never invent a zero.
+    if (event.amount_paise === null || event.amount_paise === undefined) continue;
     const key = monthKey(event.occurred_at);
     const bucket = byMonth.get(key) ?? { inflow: 0, outflow: 0 };
-    const amount = event.amount_paise ?? 0;
+    const amount = event.amount_paise;
     if (event.direction === "CREDIT") bucket.inflow += amount;
     else if (event.direction === "DEBIT") bucket.outflow += amount;
     byMonth.set(key, bucket);

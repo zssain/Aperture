@@ -227,7 +227,23 @@ async def seed_demo() -> None:
 
         tenant = await session.scalar(select(Tenant).where(Tenant.slug == "aperture-demo"))
         if tenant is None:
-            tenant = Tenant(name="Aperture Demo", slug="aperture-demo", config={"demo": True})
+            tenant = Tenant(
+                name="Aperture Demo",
+                slug="aperture-demo",
+                config={
+                    "demo": True,
+                    # Per-role approval authority. Without this, ceiling_for_role() is
+                    # None and every human approval is rejected as INSUFFICIENT_AUTHORITY,
+                    # which would block the entire review/override journey. Analyst can
+                    # confirm starter/standard cases but not high-value ones (Fatima at
+                    # ₹2.5L stays above the analyst ceiling — demonstrating enforcement).
+                    "approval_ceilings_paise": {
+                        "CREDIT_ANALYST": 15_000_000,
+                        "FRAUD_REVIEWER": 15_000_000,
+                        "CREDIT_POLICY_OWNER": 100_000_000,
+                    },
+                },
+            )
             session.add(tenant)
             await session.flush()
         users: dict[UserRole, User] = {}

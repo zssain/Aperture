@@ -101,6 +101,24 @@ async def test_assessment_failure_persists_no_decision_and_raises(
     assert await _decision_count(db_session, d.tenant_id) == 0
 
 
+async def test_null_requested_amount_fails_rather_than_assessing_zero_loan(
+    db_session: AsyncSession,
+) -> None:
+    """A missing requested amount is unknowable input, not a ₹0 loan: the decision must
+    fail as SYSTEM_UNAVAILABLE (invariant 2), never fabricate a zero and assess it."""
+    d = await build_decidable(db_session)
+    await publish_seed(db_session, d)
+    d.application.requested_amount_paise = None
+    await db_session.flush()
+
+    with pytest.raises(SystemUnavailableError):
+        await decide(
+            db_session, d.context, application_id=d.application.id, as_of=AS_OF, idempotency_key="k"
+        )
+    await db_session.rollback()
+    assert await _decision_count(db_session, d.tenant_id) == 0
+
+
 async def test_ledger_append_failure_rolls_back_decision(
     db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:

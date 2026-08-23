@@ -17,15 +17,15 @@ from typing import Any
 from pypdf import PdfReader
 from pypdf.errors import FileNotDecryptedError
 
+from app.models.enums import EventDirection, SourceTier
+from app.services.sources.base import NormalizedEvent
+from app.services.sources.provenance import check_csv_provenance, check_pdf_provenance
+
 _ENCRYPTED_PDF_MESSAGE = (
     "This PDF is password-protected, so its contents cannot be read. Remove the "
     "password (open it and re-save or print it to an unprotected PDF) and upload "
     "again, or upload a CSV export instead."
 )
-
-from app.models.enums import EventDirection, SourceTier
-from app.services.sources.base import NormalizedEvent
-from app.services.sources.provenance import check_csv_provenance, check_pdf_provenance
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_ROWS = 20_000
@@ -53,7 +53,15 @@ _DESC_ALIASES = frozenset(
 )
 _AMOUNT_ALIASES = frozenset({"amount", "transaction amount", "amount (inr)", "amount(inr)"})
 _DEBIT_ALIASES = frozenset(
-    {"debit", "withdrawal", "withdrawals", "withdrawal amt", "withdrawal amount", "debit amount", "dr"}
+    {
+        "debit",
+        "withdrawal",
+        "withdrawals",
+        "withdrawal amt",
+        "withdrawal amount",
+        "debit amount",
+        "dr",
+    }
 )
 _CREDIT_ALIASES = frozenset(
     {"credit", "deposit", "deposits", "deposit amt", "deposit amount", "credit amount", "cr"}
