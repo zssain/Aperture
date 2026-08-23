@@ -180,7 +180,7 @@ describe("CaseFilePage", () => {
     renderCase("/cases/app-1");
     await screen.findByText("APPROVE_STARTER");
 
-    const trigger = screen.getByRole("button", { name: /monthly inflow cv/i });
+    const trigger = screen.getByRole("button", { name: /monthly inflow variability/i });
     await userEvent.click(trigger);
 
     // Drawer shows the feature's formula (from the lineage endpoint).

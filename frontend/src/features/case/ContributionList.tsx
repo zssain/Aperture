@@ -1,10 +1,15 @@
 import { Icon } from "../../components/ui/Icon";
 import { cn } from "../../lib/cn";
-import { formatNumber } from "../../lib/format";
+import { formatNumber, formatPaise } from "../../lib/format";
+import { featureLabel } from "./labels";
 import { FeatureNumber, type Contribution } from "./useCase";
 
-function humanize(feature: string): string {
-  return feature.replace(/_paise$/, "").replace(/_/g, " ");
+/** Money features are stored in paise → show as ₹; ratios keep two decimals; whole
+ * counts drop the trailing zeros. Missing stays an em-dash, never a zero. */
+function formatFeatureValue(key: string, value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  if (key.endsWith("_paise")) return formatPaise(value);
+  return formatNumber(value, Number.isInteger(value) ? 0 : 2);
 }
 
 function increasesRisk(c: Contribution): boolean {
@@ -47,7 +52,7 @@ export function ContributionList({ contributions }: { contributions: Contributio
             <li key={c.feature} className="py-2">
               <FeatureNumber featureKey={c.feature} className="block w-full text-left">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-ink">{humanize(c.feature)}</span>
+                  <span className="text-ink">{featureLabel(c.feature)}</span>
                   <span
                     className={cn(
                       "inline-flex items-center gap-1 text-xs font-medium",
@@ -80,9 +85,7 @@ export function ContributionList({ contributions }: { contributions: Contributio
                     {formatNumber(c.contribution, 3)}
                   </span>
                   <span className="w-24 text-right text-xs tabular-nums text-muted">
-                    {c.value !== null && c.value !== undefined
-                      ? formatNumber(c.value, 2)
-                      : "—"}
+                    {formatFeatureValue(c.feature, c.value)}
                   </span>
                 </div>
               </FeatureNumber>

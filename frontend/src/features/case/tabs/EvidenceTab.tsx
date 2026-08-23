@@ -10,6 +10,7 @@ import { Skeleton } from "../../../components/ui/Skeleton";
 import { cn } from "../../../lib/cn";
 import { formatDate, formatPaise } from "../../../lib/format";
 import { CashflowTimeline, type CashflowPoint } from "../CashflowTimeline";
+import { sourceTypeLabel } from "../labels";
 import { useEvidence, type CaseData, type EvidenceEvent } from "../useCase";
 
 const CATEGORIES = [
@@ -83,7 +84,7 @@ function SourceList({ data }: { data: CaseData }) {
       {data.sources.map((source) => (
         <li key={source.id} className="rounded border border-border bg-surface p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-ink">{source.source_type}</span>
+            <span className="font-medium text-ink">{sourceTypeLabel(source.source_type)}</span>
             {source.tier ? (
               <Badge tone="accent">{TIER_LABELS[source.tier] ?? source.tier.replace(/_/g, " ")}</Badge>
             ) : null}

@@ -1,5 +1,6 @@
 import { MetricValue } from "../../components/ui/MetricValue";
 import { formatPercent } from "../../lib/format";
+import { coverageComponentLabel, sourceTypeLabel } from "./labels";
 import type { CoveragePayload } from "./useCase";
 
 /** Coverage as a component breakdown: what each component contributed, and what each
@@ -26,7 +27,7 @@ export function CoverageBreakdown({ payload }: { payload: CoveragePayload }) {
         <ul className="divide-y divide-border">
           {payload.components.map((component) => (
             <li key={component.name} className="flex items-center justify-between gap-3 py-1.5">
-              <span className="text-ink">{component.name.replace(/_/g, " ")}</span>
+              <span className="text-ink">{coverageComponentLabel(component.name)}</span>
               <span className="flex-1 text-right text-xs text-muted">{component.detail}</span>
               <span className="w-16 text-right tabular-nums text-ink">
                 +{formatPercent(component.contribution / 100, 0)}
@@ -45,7 +46,7 @@ export function CoverageBreakdown({ payload }: { payload: CoveragePayload }) {
                 key={missing.source_type}
                 className="flex items-center justify-between gap-3 py-1.5"
               >
-                <span className="text-ink">{missing.source_type.replace(/_/g, " ")}</span>
+                <span className="text-ink">{sourceTypeLabel(missing.source_type)}</span>
                 <span className="flex-1 text-right text-xs text-muted">{missing.why}</span>
                 <span className="w-16 text-right tabular-nums text-positive">
                   +{missing.coverage_delta}
