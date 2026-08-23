@@ -17,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.application import Application
-from app.models.enums import EventDirection
+from app.models.enums import EventDirection, EvidenceEventType
 from app.models.feature import FeatureSnapshot
 from app.models.ledger import LedgerEvent
 from app.services.audit.canonical import canonical_json
@@ -27,12 +27,35 @@ from app.services.classification.service import (
     TxnEvent,
     classify,
 )
-from app.services.features.registry import REGISTRY, FeatureContext
+from app.services.features.registry import REGISTRY, BureauRecord, FeatureContext
 from app.services.features.schema import SCHEMA_VERSION, validate
 
 
 class ApplicationNotFoundError(Exception):
     pass
+
+
+def _coerce_int(value: Any) -> int | None:
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _latest_bureau_record(events: list[LedgerEvent]) -> BureauRecord | None:
+    """The most recent BUREAU_RECORD event's payload, as a BureauRecord (or None).
+    Point-in-time: ``events`` are already filtered to occurred_at <= as_of."""
+    bureau_events = [e for e in events if e.event_type == EvidenceEventType.BUREAU_RECORD]
+    if not bureau_events:
+        return None
+    latest = max(bureau_events, key=lambda e: (e.occurred_at, str(e.id)))
+    payload = latest.payload or {}
+    return BureauRecord(
+        event_id=str(latest.id),
+        score=_coerce_int(payload.get("bureau_score")),
+        active_loans=_coerce_int(payload.get("bureau_active_loans")),
+        delinquencies_12m=_coerce_int(payload.get("bureau_delinquencies_12m")),
+    )
 
 
 def compute_input_hash(
@@ -79,10 +102,12 @@ def _to_txn(event: LedgerEvent) -> TxnEvent:
 
 
 def compute_feature_values(
-    as_of: datetime, classified: tuple[ClassifiedEvent, ...]
+    as_of: datetime,
+    classified: tuple[ClassifiedEvent, ...],
+    bureau: BureauRecord | None = None,
 ) -> tuple[dict[str, Any], dict[str, str], dict[str, Any]]:
     """Compute (values, null_map, lineage) and validate. Pure — no DB, no imputation."""
-    ctx = FeatureContext(as_of=as_of, events=list(classified))
+    ctx = FeatureContext(as_of=as_of, events=list(classified), bureau=bureau)
     values: dict[str, Any] = {}
     null_map: dict[str, str] = {}
     lineage: dict[str, Any] = {}
@@ -130,8 +155,13 @@ async def compute_snapshot(
     applicant_id = application.applicant_id
 
     events = await _load_events(session, tenant_id, applicant_id, as_of)
-    classification = classify([_to_txn(event) for event in events])
-    values, null_map, lineage = compute_feature_values(as_of, classification.events)
+    # Only transactions feed cash-flow classification; a bureau record is not a
+    # transaction and must not become a ₹0 ghost event in the cash-flow features.
+    txn_events = [e for e in events if e.event_type == EvidenceEventType.TRANSACTION]
+    classification = classify([_to_txn(event) for event in txn_events])
+    values, null_map, lineage = compute_feature_values(
+        as_of, classification.events, bureau=_latest_bureau_record(events)
+    )
 
     contributing = [str(event.id) for event in events]
     catalog_ids = sorted(

@@ -200,7 +200,20 @@ export interface CaseData {
   recourse: RecourseOption[];
   reviews: CaseReview[];
   blocking_tab: string;
+  bureau: BureauSignals;
   bureau_only: Counterfactual;
+}
+
+export interface BureauMetric {
+  value: number | null;
+  status: MetricStatus;
+}
+
+export interface BureauSignals {
+  present: boolean;
+  score: BureauMetric;
+  active_loans: BureauMetric;
+  delinquencies_12m: BureauMetric;
 }
 
 export interface EvidenceEvent {

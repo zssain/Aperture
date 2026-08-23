@@ -82,6 +82,14 @@ export const GLOSSARY = {
     howCalculated:
       "Exactly one policy version is live per tenant. The decision records which one ran, so replaying it against that version reproduces the identical outcome and hashes.",
   },
+  bureau: {
+    term: "Credit bureau signals",
+    definition:
+      "Signals from a traditional credit bureau file (score, active loans, recent delinquencies), when the applicant has one. Most thin-file applicants don't.",
+    howCalculated:
+      "Read directly from a consented bureau pull, stored as a bureau record. They add a verified source (raising coverage) and are shown for context.",
+    note: "The production scorecard is cash-flow-only, so these do NOT change the PD — the point is to lend without needing them. Absent bureau data shows as '—', never 0.",
+  },
   recourse: {
     term: "Recourse",
     definition:

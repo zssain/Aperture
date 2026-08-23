@@ -135,6 +135,16 @@ class AssessmentChipsOut(BaseModel):
     verification: str  # CLEAR | ELEVATED | HIGH | UNAVAILABLE
 
 
+class BureauOut(BaseModel):
+    """The applicant's credit-bureau signals, when a bureau file is present. Each is a
+    MetricOut so the UI renders a real value or an honest "unavailable" — never a zero."""
+
+    present: bool
+    score: MetricOut
+    active_loans: MetricOut
+    delinquencies_12m: MetricOut
+
+
 class CounterfactualOut(BaseModel):
     # What a bureau-only policy would have decided: the live policy evaluated with the
     # cash-flow features masked, leaving only the bureau signals.
@@ -165,6 +175,7 @@ class CaseOut(BaseModel):
     recourse: list[RecourseOptionOut]
     reviews: list[ReviewOut]
     blocking_tab: str  # evidence | assessment | verification | recourse | decision
+    bureau: BureauOut
     bureau_only: CounterfactualOut
 
 

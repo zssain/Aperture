@@ -76,6 +76,9 @@ class PersonaSpec:
     level_extra_credits: bool = False
     balances_present: bool = True
     tier: SourceTier = SourceTier.AA_VERIFIED
+    # When true, also attach a simulated credit-bureau file (a second source type +
+    # populated bureau signals) so the demo shows the bureau path end to end.
+    has_bureau: bool = False
     # (days_ago of an existing event, paise): an unexplained running-balance jump is
     # applied from that event onward — the signature of a hand-edited statement.
     balance_jump: tuple[int, int] | None = None
@@ -437,9 +440,11 @@ PERSONAS: tuple[PersonaSpec, ...] = (
         occupation="SALARIED",
         story=(
             "Strong everything: senior salary, 8 months of history, every bill on time, "
-            "healthy balances. Requests above the mandatory-review ceiling. Expected: "
-            "APPROVE_ENHANCED, routed to a human by rule 10."
+            "healthy balances, AND a clean credit-bureau file. Requests above the "
+            "mandatory-review ceiling. Expected: APPROVE_ENHANCED, routed to a human by "
+            "rule 10; coverage reaches HIGH thanks to the second (bureau) source."
         ),
+        has_bureau=True,
         months=8,
         requested_amount_paise=25_000_000,
         requested_tenor_months=24,

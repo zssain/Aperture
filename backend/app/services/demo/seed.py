@@ -50,6 +50,12 @@ from app.services.demo.personas import PERSONAS, TRANSITION_REF, PersonaSpec, bu
 from app.services.events.service import ingest_event
 from app.services.orchestrator.service import decide
 from app.services.policy.defaults import seed_policy_v1
+from app.services.sources.mock_bureau import (
+    BUREAU_SOURCE_TYPE,
+    BUREAU_TIER,
+    bureau_event_id,
+    generate_bureau_reading,
+)
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -212,7 +218,86 @@ async def _create_persona(
                 payload={"synthetic_demo": True},
             )
         )
+
+    if spec.has_bureau:
+        await _attach_bureau(
+            session, tenant=tenant, applicant=applicant, anchor=anchor, ref=spec.ref
+        )
     return application
+
+
+async def _attach_bureau(
+    session: AsyncSession,
+    *,
+    tenant: Tenant,
+    applicant: Applicant,
+    anchor: datetime,
+    ref: str,
+) -> None:
+    """Attach a simulated credit-bureau file: a BUREAU source connection + snapshot and
+    one immutable BUREAU_RECORD event whose payload the feature snapshot reads."""
+    reading = generate_bureau_reading(ref)
+    consent = Consent(
+        tenant_id=tenant.id,
+        applicant_id=applicant.id,
+        status=ConsentStatus.GRANTED,
+        purpose="Credit bureau pull (sandbox demonstration)",
+        scope={"sources": [SourceType.BUREAU.value], "demo": True},
+        granted_at=anchor - timedelta(days=5),
+        expires_at=anchor + timedelta(days=365),
+        artefact_hash=hashlib.sha256(f"demo-bureau-consent:{ref}".encode()).hexdigest(),
+    )
+    session.add(consent)
+    await session.flush()
+    connection = SourceConnection(
+        tenant_id=tenant.id,
+        applicant_id=applicant.id,
+        consent_id=consent.id,
+        source_type=BUREAU_SOURCE_TYPE,
+        tier=BUREAU_TIER,
+        provider="DEMO_BUREAU",
+        status=SourceConnectionStatus.CONNECTED,
+    )
+    session.add(connection)
+    await session.flush()
+    pulled_at = anchor - timedelta(days=3)
+    snapshot = SourceSnapshot(
+        tenant_id=tenant.id,
+        source_connection_id=connection.id,
+        applicant_id=applicant.id,
+        tier=BUREAU_TIER,
+        fetched_at=anchor,
+        period_start=pulled_at,
+        period_end=pulled_at,
+        content_hash=hashlib.sha256(f"demo-bureau:{ref}".encode()).hexdigest(),
+        record_count=1,
+        ingested_count=1,
+        payload={"synthetic_demo": True},
+    )
+    session.add(snapshot)
+    await session.flush()
+    session.add(
+        LedgerEvent(
+            id=bureau_event_id(ref),
+            tenant_id=tenant.id,
+            applicant_id=applicant.id,
+            source_connection_id=connection.id,
+            source_snapshot_id=snapshot.id,
+            event_type=EvidenceEventType.BUREAU_RECORD,
+            direction=None,
+            amount_paise=None,
+            balance_paise=None,
+            description="Credit bureau file",
+            category=None,
+            classification_method=ClassificationMethod.UNCLASSIFIED,
+            classifier_version="clf-v2",
+            counterparty_hash=None,
+            occurred_at=pulled_at,
+            received_at=anchor,
+            idempotency_key=f"demo-bureau:{ref}",
+            payload={"synthetic_demo": True, **reading.to_payload()},
+        )
+    )
 
 
 async def seed_demo() -> None:

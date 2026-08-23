@@ -40,6 +40,7 @@ from app.schemas.case import (
     ApplicationOut,
     AssessmentChipsOut,
     AssessmentOut,
+    BureauOut,
     CaseOut,
     CitedEventOut,
     CounterfactualOut,
@@ -467,6 +468,7 @@ async def assemble_case(
     decision_out = await _decision_out(session, tenant_id, decision) if decision else None
     recourse = await _recourse(session, tenant_id, decision.id) if decision else []
 
+    bureau = await _bureau_signals(session, tenant_id, snapshot_id)
     bureau_only = await _bureau_only(session, tenant_id, application, decision)
 
     return CaseOut(
@@ -499,7 +501,33 @@ async def assemble_case(
         blocking_tab=blocking_tab_for(
             decision_out.fired_rules if decision_out else [], decision is not None
         ),
+        bureau=bureau,
         bureau_only=bureau_only,
+    )
+
+
+async def _bureau_signals(
+    session: AsyncSession, tenant_id: uuid.UUID, snapshot_id: uuid.UUID | None
+) -> BureauOut:
+    """The three bureau signals from the stored snapshot, each as a value-or-unavailable
+    metric. Absent bureau file → all unavailable (never zero)."""
+
+    def _metric(values: dict[str, Any], key: str) -> MetricOut:
+        raw = values.get(key)
+        if raw is None:
+            return MetricOut(value=None, status="unavailable")
+        return MetricOut(value=float(raw), status="measured")
+
+    values: dict[str, Any] = {}
+    if snapshot_id is not None:
+        snapshot = await session.get(FeatureSnapshot, snapshot_id)
+        if snapshot is not None:
+            values = snapshot.values or {}
+    return BureauOut(
+        present=any(k in values for k in BUREAU_FEATURES),
+        score=_metric(values, "bureau_score"),
+        active_loans=_metric(values, "bureau_active_loans"),
+        delinquencies_12m=_metric(values, "bureau_delinquencies_12m"),
     )
 
 

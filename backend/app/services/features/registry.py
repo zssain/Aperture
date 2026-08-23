@@ -53,9 +53,23 @@ class FeatureResult:
 
 
 @dataclass(frozen=True)
+class BureauRecord:
+    """The latest credit-bureau reading for an applicant, when one exists. Distinct from
+    cash-flow evidence; populated from a BUREAU_RECORD ledger event's payload. Any field
+    may be None (the bureau returned no value for it)."""
+
+    event_id: str
+    score: int | None = None
+    active_loans: int | None = None
+    delinquencies_12m: int | None = None
+
+
+@dataclass(frozen=True)
 class FeatureContext:
     as_of: datetime
     events: list[ClassifiedEvent]
+    # None when the applicant has no bureau file (the common thin-file case).
+    bureau: BureauRecord | None = None
 
 
 @dataclass(frozen=True)
@@ -469,10 +483,20 @@ def _vector_classified_share(ctx: FeatureContext) -> FeatureResult:
     return FeatureResult(value=value, lineage=_ids(matched), clamped=clamped)
 
 
-def _bureau_null(reason: str) -> Callable[[FeatureContext], FeatureResult]:
+def _bureau_field(
+    field: str, reason: str
+) -> Callable[[FeatureContext], FeatureResult]:
+    """Read one field from the applicant's bureau record. Absent record OR a field the
+    bureau didn't return stays null-with-reason (never coerced to 0), and cites the
+    bureau event when present so the value is traceable."""
+
     def compute(ctx: FeatureContext) -> FeatureResult:
-        # No bureau adapter yet; bureau data is unavailable (distinct from "clean").
-        return _null(reason)
+        if ctx.bureau is None:
+            return _null(reason)
+        value = getattr(ctx.bureau, field)
+        if value is None:
+            return _null(reason)
+        return FeatureResult(value=int(value), lineage=[ctx.bureau.event_id])
 
     return compute
 
@@ -784,7 +808,7 @@ REGISTRY: tuple[FeatureSpec, ...] = (
         NO_BUREAU_DATA,
         "higher_better",
         (0.0, 900.0),
-        _bureau_null(NO_BUREAU_DATA),
+        _bureau_field("score", NO_BUREAU_DATA),
     ),
     FeatureSpec(
         "bureau_active_loans",
@@ -795,7 +819,7 @@ REGISTRY: tuple[FeatureSpec, ...] = (
         NO_BUREAU_DATA,
         "lower_better",
         (0.0, 100.0),
-        _bureau_null(NO_BUREAU_DATA),
+        _bureau_field("active_loans", NO_BUREAU_DATA),
     ),
     FeatureSpec(
         "bureau_delinquencies_12m",
@@ -806,7 +830,7 @@ REGISTRY: tuple[FeatureSpec, ...] = (
         NO_BUREAU_DATA,
         "lower_better",
         (0.0, 100.0),
-        _bureau_null(NO_BUREAU_DATA),
+        _bureau_field("delinquencies_12m", NO_BUREAU_DATA),
     ),
 )
 

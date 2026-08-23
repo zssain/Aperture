@@ -136,6 +136,40 @@ def test_zero_events_only_history_depth_is_zero() -> None:
     assert "median_monthly_inflow_paise" in null_map
 
 
+def test_bureau_features_null_without_a_record() -> None:
+    from app.services.features.registry import NO_BUREAU_DATA
+
+    _values, null_map, _lineage = compute_feature_values(AS_OF, ())
+    for key in ("bureau_score", "bureau_active_loans", "bureau_delinquencies_12m"):
+        assert null_map[key] == NO_BUREAU_DATA  # unavailable, never coerced to 0
+
+
+def test_bureau_features_populate_from_a_record() -> None:
+    from app.services.features.registry import BureauRecord
+
+    record = BureauRecord(
+        event_id=str(uuid.uuid4()), score=742, active_loans=2, delinquencies_12m=0
+    )
+    values, null_map, lineage = compute_feature_values(AS_OF, (), bureau=record)
+    assert values["bureau_score"] == 742
+    assert values["bureau_active_loans"] == 2
+    # A real observed zero is a value, not a null.
+    assert values["bureau_delinquencies_12m"] == 0
+    assert "bureau_delinquencies_12m" not in null_map
+    # The value is traceable to the bureau event.
+    assert lineage["bureau_score"]["events"] == [record.event_id]
+
+
+def test_bureau_missing_field_stays_null_not_zero() -> None:
+    from app.services.features.registry import NO_BUREAU_DATA, BureauRecord
+
+    record = BureauRecord(event_id=str(uuid.uuid4()), score=700, active_loans=None)
+    values, null_map, _lineage = compute_feature_values(AS_OF, (), bureau=record)
+    assert values["bureau_score"] == 700
+    assert "bureau_active_loans" not in values
+    assert null_map["bureau_active_loans"] == NO_BUREAU_DATA
+
+
 def test_cv_returns_null_below_mean_floor() -> None:
     events = [
         _txn(15, EventDirection.CREDIT, 5_000, "Salary credit", "SAL"),

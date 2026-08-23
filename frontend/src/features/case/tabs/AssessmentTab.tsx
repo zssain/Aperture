@@ -7,10 +7,22 @@ import { ContributionList } from "../ContributionList";
 import { CoverageBreakdown } from "../CoverageBreakdown";
 import type {
   AffordabilityPayload,
+  BureauMetric,
   CaseData,
   CoveragePayload,
   RiskPayload,
 } from "../useCase";
+
+function BureauStat({ label, metric }: { label: string; metric: BureauMetric }) {
+  return (
+    <div className="rounded border border-border bg-surface p-3">
+      <dt className="eyebrow text-muted">{label}</dt>
+      <dd className="mt-1 text-heading font-semibold text-ink">
+        <MetricValue value={metric.value} status={metric.status} precision={0} />
+      </dd>
+    </div>
+  );
+}
 
 function Section({
   title,
@@ -80,6 +92,21 @@ export function AssessmentTab({ data }: { data: CaseData }) {
 
       <Section title="Coverage" hint={<InfoHint term="evidence_coverage" />}>
         <CoverageBreakdown payload={coveragePayload} />
+      </Section>
+
+      <Section title="Credit bureau" hint={<InfoHint term="bureau" />}>
+        {data.bureau.present ? (
+          <dl className="grid grid-cols-3 gap-3">
+            <BureauStat label="Score" metric={data.bureau.score} />
+            <BureauStat label="Active loans" metric={data.bureau.active_loans} />
+            <BureauStat label="Delinquencies · 12m" metric={data.bureau.delinquencies_12m} />
+          </dl>
+        ) : (
+          <p className="text-sm text-muted">
+            No credit-bureau file on this applicant — the decision rests on cash-flow
+            evidence. Bureau signals show here as “—”, never as zero.
+          </p>
+        )}
       </Section>
     </div>
   );

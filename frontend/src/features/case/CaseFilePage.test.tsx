@@ -89,6 +89,12 @@ function makeCase(over: Partial<CaseData> = {}): CaseData {
     recourse: [],
     reviews: [],
     blocking_tab: "assessment",
+    bureau: {
+      present: false,
+      score: { value: null, status: "unavailable" },
+      active_loans: { value: null, status: "unavailable" },
+      delinquencies_12m: { value: null, status: "unavailable" },
+    },
     bureau_only: {
       available: false, outcome: "REVIEW_EVIDENCE", action: "REFER",
       note: "A bureau-only lender lacks the cash-flow evidence.",
