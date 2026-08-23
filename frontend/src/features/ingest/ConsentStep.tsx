@@ -1,3 +1,4 @@
+import { Chip } from "../../components/ui/Chip";
 import { Input } from "../../components/ui/Input";
 import type { SourceType } from "./useIngest";
 
@@ -6,6 +7,7 @@ interface ConsentStepProps {
   scopes: SourceType[];
   purpose: string;
   expiresOn: string;
+  bankName?: string | null;
   disabled?: boolean;
   error?: string;
   onGrantedChange: (granted: boolean) => void;
@@ -20,11 +22,19 @@ const SOURCE_LABELS: Record<SourceType, string> = {
   UPI: "UPI accounts",
 };
 
+function formatDate(value: string): string {
+  const parsed = new Date(`${value}T00:00:00`);
+  return Number.isNaN(parsed.getTime())
+    ? value
+    : parsed.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+}
+
 export function ConsentStep({
   granted,
   scopes,
   purpose,
   expiresOn,
+  bankName = null,
   disabled = false,
   error,
   onGrantedChange,
@@ -35,10 +45,16 @@ export function ConsentStep({
   return (
     <section aria-labelledby="consent-heading" className="rounded border border-border bg-surface p-5">
       <div className="mb-4">
-        <p className="eyebrow">Step 3 · Consent</p>
+        <p className="eyebrow">Step 4 · Consent</p>
         <h2 id="consent-heading" className="text-heading font-semibold text-ink">
           Applicant authorisation
         </h2>
+        {bankName ? (
+          <p className="mt-1 text-sm text-muted">
+            The applicant is asked to approve sharing from {bankName} through the Account
+            Aggregator sandbox.
+          </p>
+        ) : null}
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-1">
@@ -79,11 +95,46 @@ export function ConsentStep({
           </label>
         ))}
       </fieldset>
-      <div className="mt-4 rounded border border-border bg-sunken p-3 text-sm text-muted">
-        We access only the selected financial history to assess this credit request until the date
-        above. The applicant may revoke consent at any time; revocation stops future collection.
-        Existing decision records remain auditable.
+
+      {/* Mirror of the consent artefact that will be recorded — what the applicant
+          agrees to is exactly what the system stores and hashes. */}
+      <div className="mt-4 rounded border border-border bg-sunken p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-ink">What the applicant will see</h3>
+          <Chip tone="neutral">Recorded verbatim</Chip>
+        </div>
+        <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-muted">Purpose</dt>
+            <dd className="mt-0.5 text-ink">{purpose.trim() || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-muted">Valid until</dt>
+            <dd className="mt-0.5 text-ink">{expiresOn ? formatDate(expiresOn) : "—"}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="text-xs uppercase tracking-wide text-muted">Shared with Aperture</dt>
+            <dd className="mt-1 flex flex-wrap gap-1.5">
+              {scopes.length > 0 ? (
+                scopes.map((scope) => (
+                  <Chip key={scope} tone="neutral">
+                    {SOURCE_LABELS[scope]}
+                    {bankName && scope === "BANK" ? ` · ${bankName}` : ""}
+                  </Chip>
+                ))
+              ) : (
+                <span className="text-muted">No accounts selected yet</span>
+              )}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-3 text-xs text-muted">
+          A cryptographic hash of these exact terms is stored with the consent record, and every
+          piece of evidence links back to it. Revocation stops future collection immediately;
+          existing decision records remain auditable.
+        </p>
       </div>
+
       <label className="mt-4 flex items-start gap-2 font-medium text-ink">
         <input
           type="checkbox"

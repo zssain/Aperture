@@ -7,8 +7,10 @@ import { OfflineBanner } from "../../components/ui/OfflineBanner";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { ApplicantForm, type ApplicantErrors } from "./ApplicantForm";
+import { BankPicker, DEMO_BANKS } from "./BankPicker";
 import { ConsentStep } from "./ConsentStep";
 import { DocumentUpload } from "./DocumentUpload";
+import { ImportSummary } from "./ImportSummary";
 import { PipelineProgress } from "./PipelineProgress";
 import { SourceConnect, type EvidencePath } from "./SourceConnect";
 import {
@@ -63,6 +65,7 @@ export function IngestPage() {
   const [applicant, setApplicant] = useState(EMPTY_APPLICANT);
   const [errors, setErrors] = useState<ApplicantErrors>({});
   const [path, setPath] = useState<EvidencePath | null>(null);
+  const [bankId, setBankId] = useState<string | null>(null);
   const [consentGranted, setConsentGranted] = useState(false);
   const [scopes, setScopes] = useState<SourceType[]>([]);
   const [purpose, setPurpose] = useState("Credit underwriting");
@@ -86,11 +89,32 @@ export function IngestPage() {
     Boolean(job.data.result?.decision_id) &&
     !job.data.result?.retryable_stage;
 
+  // Let the import summary land before moving on — the numbers are the story.
   useEffect(() => {
-    if (shouldAutoOpen && completedApplicationId) {
-      navigate(`/cases/${completedApplicationId}`);
-    }
+    if (!shouldAutoOpen || !completedApplicationId) return;
+    const timer = window.setTimeout(
+      () => navigate(`/cases/${completedApplicationId}`),
+      2_400,
+    );
+    return () => window.clearTimeout(timer);
   }, [completedApplicationId, navigate, shouldAutoOpen]);
+
+  const selectedBank = DEMO_BANKS.find((bank) => bank.id === bankId) ?? null;
+  const importTotals = useMemo(() => {
+    if (intake?.ingestion) {
+      return {
+        ingested: intake.ingestion.ingested,
+        deduplicated: intake.ingestion.deduplicated,
+      };
+    }
+    const sources = job.data?.result?.sources ?? [];
+    if (sources.length === 0) return null;
+    return {
+      ingested: sources.reduce((sum, source) => sum + (source.ingested ?? 0), 0),
+      deduplicated: sources.reduce((sum, source) => sum + (source.deduplicated ?? 0), 0),
+    };
+  }, [intake, job.data?.result?.sources]);
+  const showImportSummary = shouldAutoOpen && importTotals !== null && importTotals.ingested > 0;
 
   const notice = useMemo(() => {
     if (intake?.status === "AWAITING_CONSENT") {
@@ -115,6 +139,10 @@ export function IngestPage() {
 
   function submitConnect(granted: boolean): void {
     if (!validApplicant()) return;
+    if (granted && bankId === null) {
+      setConsentError("Select the applicant's bank before requesting consent.");
+      return;
+    }
     if (granted && (!consentGranted || scopes.length === 0 || !purpose.trim() || !expiresOn)) {
       setConsentError("Explicit consent, at least one scope, purpose, and validity are required.");
       return;
@@ -182,11 +210,13 @@ export function IngestPage() {
 
       {path === "connect" ? (
         <>
+          <BankPicker selected={bankId} disabled={busy} onChange={setBankId} />
           <ConsentStep
             granted={consentGranted}
             scopes={scopes}
             purpose={purpose}
             expiresOn={expiresOn}
+            bankName={selectedBank?.name ?? null}
             disabled={busy}
             error={consentError}
             onGrantedChange={(granted) => {
@@ -247,6 +277,22 @@ export function IngestPage() {
           message={job.error.message}
           correlationId={job.error.correlationId}
           onRetry={() => void job.refetch()}
+        />
+      ) : null}
+      {showImportSummary && importTotals ? (
+        <ImportSummary
+          ingested={importTotals.ingested}
+          deduplicated={importTotals.deduplicated}
+          sourceLabel={
+            path === "connect"
+              ? `${selectedBank?.name ?? "Bank"} · Account Aggregator sandbox`
+              : `Uploaded statement${file ? ` · ${file.name}` : ""}`
+          }
+          tierLabel={path === "connect" ? "AA-verified" : "Declared document"}
+          decisionReady
+          onOpenCase={() => {
+            if (completedApplicationId) navigate(`/cases/${completedApplicationId}`);
+          }}
         />
       ) : null}
       {job.data ? (

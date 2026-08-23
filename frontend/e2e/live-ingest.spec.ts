@@ -62,6 +62,7 @@ test("connected account runs through the live mock AA adapter and worker to a ca
   await page.getByLabel("Requested amount (₹)").fill("20000");
   await page.getByLabel("Requested tenor (months)").fill("12");
   await page.getByLabel(/Connect financial accounts/).check();
+  await page.getByLabel("HDFC Bank").check();
   await page.getByLabel("Bank accounts").check();
   await page.getByLabel(/explicitly grants this consent/).check();
 

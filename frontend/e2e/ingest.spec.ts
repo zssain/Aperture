@@ -79,6 +79,11 @@ test("connect intake is keyboard-completable and lands in the case", async ({ pa
   await page.getByLabel(/Connect financial accounts/).focus();
   await page.keyboard.press("Space");
 
+  // The sandbox bank picker gates the consent step.
+  await expect(page.getByRole("heading", { name: "Where does the applicant bank?" })).toBeVisible();
+  await page.getByLabel("HDFC Bank").focus();
+  await page.keyboard.press("Space");
+
   await expect(page.getByLabel("Bank accounts")).not.toBeChecked();
   await expect(page.getByLabel(/explicitly grants this consent/)).not.toBeChecked();
   await page.getByLabel("Bank accounts").focus();
@@ -88,5 +93,6 @@ test("connect intake is keyboard-completable and lands in the case", async ({ pa
   await page.getByRole("button", { name: "Connect and start pipeline" }).focus();
   await page.keyboard.press("Enter");
 
-  await expect(page).toHaveURL(`/cases/${applicationId}`);
+  // The auto-open pauses briefly so the import summary can land first.
+  await expect(page).toHaveURL(`/cases/${applicationId}`, { timeout: 10_000 });
 });

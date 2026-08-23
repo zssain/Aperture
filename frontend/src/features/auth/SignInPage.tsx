@@ -12,6 +12,16 @@ interface SignInLocationState {
   returnTo?: string;
 }
 
+/** Local sandbox credentials, shown only in dev builds (stripped from production
+ * bundles). They match the accounts created by `make demo-reset`. */
+const DEMO_ACCOUNTS: Array<{ label: string; email: string }> = [
+  { label: "Credit analyst", email: "credit-analyst@demo.aperture.test" },
+  { label: "Policy owner", email: "credit-policy-owner@demo.aperture.test" },
+  { label: "Fraud reviewer", email: "fraud-reviewer@demo.aperture.test" },
+  { label: "Auditor", email: "auditor@demo.aperture.test" },
+];
+const DEMO_PASSWORD = "Demo-Only-Strong-Passw0rd!";
+
 interface FieldErrors {
   email?: string;
   password?: string;
@@ -166,6 +176,34 @@ export function SignInPage() {
           <Button type="submit" className="w-full" loading={signIn.isPending}>
             Sign in
           </Button>
+
+          {import.meta.env.DEV ? (
+            <div className="rounded border border-border bg-sunken p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                Demo accounts (sandbox)
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
+                {DEMO_ACCOUNTS.map((account) => (
+                  <button
+                    key={account.email}
+                    type="button"
+                    className="rounded border border-border-strong bg-surface px-2 py-1.5 text-left text-xs font-medium text-ink transition-colors duration-fast hover:border-accent/60 hover:bg-surface-subtle"
+                    onClick={() => {
+                      setEmail(account.email);
+                      setPassword(DEMO_PASSWORD);
+                      setErrors({});
+                    }}
+                  >
+                    {account.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted">
+                Fills the form with local sandbox credentials seeded by{" "}
+                <span className="font-mono">make demo-reset</span>.
+              </p>
+            </div>
+          ) : null}
         </form>
       </div>
 

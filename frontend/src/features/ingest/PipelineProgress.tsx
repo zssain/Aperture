@@ -38,7 +38,7 @@ export function PipelineProgress({ job, retrying = false, onRetry }: PipelinePro
   return (
     <section aria-labelledby="pipeline-heading" className="rounded border border-border bg-surface p-5">
       <div className="mb-4">
-        <p className="text-xs font-medium uppercase text-muted">4. Pipeline</p>
+        <p className="text-xs font-medium uppercase text-muted">Pipeline</p>
         <h2 id="pipeline-heading" className="text-heading font-semibold text-ink">
           Case progress
         </h2>

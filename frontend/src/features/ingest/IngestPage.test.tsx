@@ -124,13 +124,15 @@ describe("IngestPage", () => {
     renderPage();
     await fillApplicant(user);
     await user.click(screen.getByLabelText(/Connect financial accounts/));
+    await user.click(screen.getByLabelText("HDFC Bank"));
     expect(screen.getByLabelText("Bank accounts")).not.toBeChecked();
     expect(screen.getByLabelText(/explicitly grants this consent/)).not.toBeChecked();
     await user.click(screen.getByLabelText("Bank accounts"));
     await user.click(screen.getByLabelText(/explicitly grants this consent/));
     await user.click(screen.getByRole("button", { name: "Connect and start pipeline" }));
 
-    expect(await screen.findByText("Case destination")).toBeVisible();
+    // The auto-open pauses ~2.4 s so the import summary can land first.
+    expect(await screen.findByText("Case destination", {}, { timeout: 5_000 })).toBeVisible();
     const applicationRequest = requests.find((request) => request.url.endsWith("/applications"));
     expect(applicationRequest).toBeDefined();
     const payload = (await applicationRequest?.json()) as {
@@ -202,7 +204,8 @@ describe("IngestPage", () => {
     await user.click(screen.getByRole("button", { name: "Upload and start case" }));
 
     expect(await screen.findByText("Computing features: pending")).toBeVisible();
-    expect(await screen.findByText("Case destination", {}, { timeout: 2_500 })).toBeVisible();
+    expect(await screen.findByText(/7 transactions imported/, {}, { timeout: 2_500 })).toBeVisible();
+    expect(await screen.findByText("Case destination", {}, { timeout: 5_000 })).toBeVisible();
     expect(jobPolls).toBeGreaterThanOrEqual(2);
   });
 
@@ -466,6 +469,7 @@ describe("IngestPage", () => {
     );
     await fillApplicant(user);
     await user.click(screen.getByLabelText(/Connect financial accounts/));
+    await user.click(screen.getByLabelText("HDFC Bank"));
     await user.click(screen.getByLabelText("Bank accounts"));
     await user.click(screen.getByLabelText(/explicitly grants this consent/));
     await user.click(screen.getByRole("button", { name: "Connect and start pipeline" }));
