@@ -7,6 +7,11 @@ engine decides. Every decision is immutable, network-free to replay, and accompa
 plain-language reasons and recourse.
 
 See [the architecture](docs/ARCHITECTURE.md) for the six-layer diagram and lifecycle.
+A public marketing homepage lives at `/`; the workspace sits behind `/signin` and the
+app routes. To host the database on Supabase, see
+[docs/SUPABASE_MIGRATION.md](docs/SUPABASE_MIGRATION.md) and
+[docs/adr/0001-supabase-db-hosting-only.md](docs/adr/0001-supabase-db-hosting-only.md)
+(local docker-compose Postgres remains the default dev target).
 
 ## Prerequisites
 

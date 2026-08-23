@@ -1,10 +1,11 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import { AppShell } from "../components/shell/AppShell";
 import { RequireAuth } from "../components/shell/RequireAuth";
 import { RequireRole } from "../components/shell/RequireRole";
 import { EmptyState } from "../components/ui/EmptyState";
 import { SignInPage } from "../features/auth/SignInPage";
+import { HomePage } from "../features/marketing/HomePage";
 import { CaseFilePage } from "../features/case/CaseFilePage";
 import { IngestPage } from "../features/ingest/IngestPage";
 import { QueuePage } from "../features/queue/QueuePage";
@@ -23,6 +24,7 @@ function NotFoundPage({ title, description }: NotFoundPageProps) {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<HomePage />} />
       <Route path="/signin" element={<SignInPage />} />
 
       <Route
@@ -32,7 +34,6 @@ export function AppRoutes() {
           </RequireAuth>
         }
       >
-        <Route index element={<Navigate to="/queue" replace />} />
         <Route path="/queue" element={<QueuePage />} />
         <Route path="/cases/:id" element={<CaseFilePage />} />
         <Route
