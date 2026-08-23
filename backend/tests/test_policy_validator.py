@@ -4,7 +4,7 @@ reachability (a deliberately shadowed rule identified by number), ordering, and 
 The seed policy v1 must pass every check.
 """
 
-from app.services.policy.defaults import seed_policy_v1
+from app.services.policy.defaults import seed_policy_v1, seed_policy_v2
 from app.services.policy.engine import GATES, Gate
 from app.services.policy.schema import PolicyOutcome, PolicyRules, TermsBand
 from app.services.policy.validator import (
@@ -30,6 +30,26 @@ def test_seed_policy_totality_and_reachability_clean() -> None:
     assert check_totality(POLICY) == []
     assert check_reachability(POLICY) == []
     assert check_ordering() == []
+
+
+def test_seed_policy_v2_is_valid_and_keeps_the_core_risk_guards() -> None:
+    """The improved v2 must pass the validator (so it is publishable) and must not touch
+    the PD thresholds or the coverage floor — those stay put while the PD is
+    uncalibrated; v2 only widens access and the learning cohort."""
+    v1, v2 = seed_policy_v1(), seed_policy_v2()
+    assert validate(v2).ok, validate(v2).errors
+    guards = lambda p: (  # noqa: E731
+        p.min_coverage,
+        p.pd_enhanced,
+        p.pd_standard,
+        p.pd_decline_threshold,
+        p.cov_mid,
+    )
+    assert guards(v1) == guards(v2)
+    # The deliberate, defensible changes.
+    assert v2.cov_high < v1.cov_high
+    assert v2.mandatory_review_ceiling_paise > v1.mandatory_review_ceiling_paise
+    assert v2.exploration_budget > v1.exploration_budget
     assert check_bounds(POLICY) == []
 
 

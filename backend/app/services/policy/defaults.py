@@ -53,3 +53,32 @@ def seed_policy_v1() -> PolicyRules:
             ),
         },
     )
+
+
+def seed_policy_v2() -> PolicyRules:
+    """An improved draft over v1. It keeps the core risk guards untouched — the PD
+    thresholds and the coverage floor stay exactly where they are, because the PD is
+    uncalibrated and moving them would be guessing — and instead makes three defensible
+    changes that lift straight-through approvals for the thin-file mission without
+    lending on less evidence:
+
+      - cov_high 75 -> 70: a well-evidenced thin-file applicant reaches the best
+        (ENHANCED) terms a little sooner. Still demands strong evidence; only widens who
+        earns the good rate.
+      - mandatory_review_ceiling ₹2,00,000 -> ₹3,00,000: a flawless applicant (all four
+        signals clean) up to ₹3L is auto-approved instead of being sent to a human for
+        the amount alone — the fraud/affordability/coverage/risk gates still apply.
+      - exploration widened (margin 0.03 -> 0.05, budget 0.05 -> 0.10): a larger,
+        still-bounded slice of near-miss declines gets a small starter loan, so the
+        model gathers the closed outcomes it needs to actually become calibrated.
+
+    Everything else is inherited from v1 unchanged."""
+    return seed_policy_v1().model_copy(
+        update={
+            "policy_version": "policy-v2",
+            "cov_high": 70,
+            "mandatory_review_ceiling_paise": 30_000_000,  # Rs 300,000
+            "exploration_margin": 0.05,
+            "exploration_budget": 0.10,
+        }
+    )

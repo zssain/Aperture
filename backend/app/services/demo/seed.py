@@ -49,7 +49,7 @@ from app.services.demo.event_generator import income_consistency_sequence
 from app.services.demo.personas import PERSONAS, TRANSITION_REF, PersonaSpec, build_corpus
 from app.services.events.service import ingest_event
 from app.services.orchestrator.service import decide
-from app.services.policy.defaults import seed_policy_v1
+from app.services.policy.defaults import seed_policy_v1, seed_policy_v2
 from app.services.sources.mock_bureau import (
     BUREAU_SOURCE_TYPE,
     BUREAU_TIER,
@@ -410,7 +410,8 @@ async def seed_demo() -> None:
                     tenant_id=tenant.id,
                     version=2,
                     status=PolicyStatus.DRAFT,
-                    rules=rules,
+                    # v2 is the improved policy, ready to simulate and publish.
+                    rules=seed_policy_v2().model_dump(mode="json"),
                     created_by=owner.id,
                 )
             )

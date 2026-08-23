@@ -23,6 +23,9 @@ services:
       SESSION_COOKIE_SECURE: "false"
       DEMO_SEED_ENABLED: "true"
       DEMO_EVENTS_ENABLED: "true"
+      # The demo book is small; production keeps the 100-snapshot default. This lets the
+      # policy simulate -> publish flow run on the demo so the owner can ship a policy.
+      POLICY_SIMULATION_MINIMUM_SNAPSHOTS: "10"
       FRONTEND_ORIGIN: ${PUBLIC_URL:-http://localhost}
   worker:
     environment:
@@ -31,6 +34,7 @@ services:
       SESSION_COOKIE_SECURE: "false"
       DEMO_SEED_ENABLED: "true"
       DEMO_EVENTS_ENABLED: "true"
+      POLICY_SIMULATION_MINIMUM_SNAPSHOTS: "10"
       FRONTEND_ORIGIN: ${PUBLIC_URL:-http://localhost}
   frontend:
     ports: ["80:8080"]
