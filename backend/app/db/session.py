@@ -6,6 +6,7 @@ readiness probe used by ``/ready``.
 """
 
 from collections.abc import AsyncGenerator
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -17,9 +18,18 @@ from sqlalchemy.ext.asyncio import (
 
 from app.core.config import settings
 
+# asyncpg connect args. statement_cache_size=0 is required behind a transaction-mode
+# pooler (Supabase 6543) and harmless elsewhere; left unset for a direct/local URL.
+_connect_args: dict[str, Any] = {}
+if settings.db_statement_cache_size is not None:
+    _connect_args["statement_cache_size"] = settings.db_statement_cache_size
+
 engine: AsyncEngine = create_async_engine(
     settings.database_url,
     pool_pre_ping=True,
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
+    connect_args=_connect_args,
     future=True,
 )
 

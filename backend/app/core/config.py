@@ -49,6 +49,18 @@ class Settings(BaseSettings):
         description="Allowed CORS origin for the SPA, e.g. http://localhost:5173",
     )
 
+    # Connection-pool sizing (per process). Keep the product of (pool_size +
+    # max_overflow) x processes under the host's connection cap. Supabase's direct
+    # connection is small (~15-60 by plan); its session pooler is larger — size
+    # accordingly via env.
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+    # asyncpg caches prepared statements per connection. Behind a transaction-mode
+    # pooler (Supabase Supavisor/PgBouncer, port 6543) pooled server connections are
+    # shared across clients, so those cached handles break at runtime. Set to 0 for any
+    # pooled connection. None = driver default (fine for a direct/local connection).
+    db_statement_cache_size: int | None = None
+
     # Event-driven decisioning. A short delay coalesces bursts without losing any
     # ledger events; queue change views intentionally show only recent changes.
     redecision_debounce_seconds: int = 5
