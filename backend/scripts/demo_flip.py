@@ -35,6 +35,23 @@ def main() -> None:
         client.headers["Cookie"] = "; ".join(f"{k}={v}" for k, v in cookies.items())
         headers = {"X-CSRF-Token": csrf}
 
+        # Re-arm guard: the events are idempotent per day, so a second run silently
+        # no-ops. The all-decisions view lists both the superseded decline and any new
+        # approval, so treat the applicant as already flipped if ANY row is an approval
+        # — and tell the presenter exactly what to do instead of guessing live.
+        rows = client.get("/queue", params={"view": "all-decisions", "q": applicant_ref}).json()
+        already_approved = any(
+            r.get("applicant_ref") == applicant_ref
+            and (r.get("recommendation") or {}).get("action") in {"APPROVE", "APPROVE_STARTER"}
+            for r in rows.get("rows", [])
+        )
+        if already_approved:
+            print(
+                f"{applicant_ref} is already approved — the flip has run this cycle. "
+                "Run `make demo-reset` to re-arm the newly-eligible moment."
+            )
+            return
+
         fired = client.post(
             "/demo/events/income-consistency",
             json={"applicant_ref": applicant_ref},
@@ -49,7 +66,10 @@ def main() -> None:
         job_id = body.get("job_id")
         print(f"Fired {len(body['event_ids'])} verified income events at {applicant_ref}.")
         if job_id is None:
-            print("No redecision job was queued (was one already pending?).")
+            print(
+                "No redecision job was queued — the events were already ingested this "
+                "cycle. Run `make demo-reset` to re-arm the flip."
+            )
             return
 
         print(f"Waiting for redecision job {job_id} …")

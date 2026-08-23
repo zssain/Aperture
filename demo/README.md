@@ -9,6 +9,7 @@ policy engine. Nothing is stubbed and no number is fabricated.
 
 ```bash
 make demo-reset        # wipe + reseed the full demo book (~3 s) and regenerate files
+make demo-check        # preflight: prove the live worker path works (verification CLEAR)
 ```
 
 Sign-in accounts (all use the password printed by the reset):

@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint typecheck migrate seed seed-demo demo-reset demo-statements demo-flip up down verify-deployment
+.PHONY: help install dev test lint typecheck migrate seed seed-demo demo-reset demo-statements demo-flip demo-ids demo-check up down verify-deployment
 
 help:
 	@echo "Aperture — available targets:"
@@ -14,6 +14,7 @@ help:
 	@echo "  demo-statements Regenerate demo/statements files with today's dates"
 	@echo "  demo-flip       Fire verified-income events at the declined demo applicant"
 	@echo "  demo-ids        Print the demo case URLs (Meera fraud, Kabir flip)"
+	@echo "  demo-check      Preflight smoke test: prove the live worker path works"
 
 install:
 	cd backend && uv sync
@@ -66,6 +67,9 @@ demo-flip:
 
 demo-ids:
 	cd backend && uv run python scripts/demo_ids.py
+
+demo-check:
+	cd backend && uv run python scripts/demo_check.py
 
 verify-deployment:
 	cd backend && uv run python scripts/verify_deployment.py

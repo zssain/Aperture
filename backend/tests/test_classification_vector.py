@@ -1,10 +1,17 @@
 import uuid
 from datetime import UTC, datetime
 
+import pytest
+from app.core.config import settings
+from app.core.providers.base import ProviderThrottled
 from app.models.enums import ClassificationMethod, EventDirection
+from app.services.classification import vector as vector_module
 from app.services.classification.rules import TxnCategory
 from app.services.classification.service import TxnEvent, VectorCandidate, classify
-from app.services.classification.vector import normalize_narration
+from app.services.classification.vector import classify_for_ingest, normalize_narration
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from tests.conftest import requires_db
 
 
 def event(description: str) -> TxnEvent:
@@ -68,4 +75,45 @@ def test_accepted_vector_records_complete_trace() -> None:
 
 def test_normalizer_preserves_mixed_indic_scripts() -> None:
     assert "बिजली" in normalize_narration("UPI/123456/बिजली TNEB தமிழ்")
+
+
+@requires_db
+async def test_embedding_failure_degrades_to_keyword_only(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A provider outage during ingest must be an honest abstention, never a crash —
+    so a live upload on flaky Wi-Fi still ingests (misses become UNCLASSIFIED)."""
+    monkeypatch.setattr(settings, "embedding_provider", "gemini", raising=False)
+
+    async def _boom(*_args: object, **_kwargs: object) -> dict[uuid.UUID, VectorCandidate]:
+        raise ProviderThrottled("embedding provider throttled")
+
+    monkeypatch.setattr(vector_module, "vector_candidates", _boom)
+
+    salary = TxnEvent(
+        uuid.uuid4(),
+        datetime(2026, 8, 1, tzinfo=UTC),
+        EventDirection.CREDIT,
+        5_000_000,
+        None,
+        "monthly salary payroll credit",
+        "employer-cp",
+        None,
+    )
+    unknown = TxnEvent(
+        uuid.uuid4(),
+        datetime(2026, 8, 1, tzinfo=UTC),
+        EventDirection.DEBIT,
+        10_000,
+        None,
+        "obscure vendor with no keyword",
+        "vendor-cp",
+        None,
+    )
+
+    result = await classify_for_ingest(db_session, [salary, unknown])
+
+    by_id = {row.event.event_id: row for row in result.events}
+    assert by_id[salary.event_id].category is TxnCategory.SALARY
+    assert by_id[unknown.event_id].classification_method is ClassificationMethod.UNCLASSIFIED
     assert "தமிழ்" in normalize_narration("UPI/123456/बिजली TNEB தமிழ்")
