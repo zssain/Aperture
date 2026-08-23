@@ -43,7 +43,12 @@ export function PolicyStudioPage() {
     <div className="hidden min-h-[650px] overflow-hidden rounded border border-border bg-surface lg:flex">
       <VersionList versions={policies.data ?? []} selected={selected?.id} onSelect={setSelectedId} onCreate={() => { if (online) create.mutate(undefined, { onSuccess: (draft) => setSelectedId(draft.id) }); }} creating={create.isPending} />
       <section aria-label="Policy editor" className="min-w-0 flex-1">
-        {!selected || selected.status !== "DRAFT" ? <div className="p-4"><EmptyState icon="document" title="No draft" description="Create a draft from the live policy to begin editing." /></div> : rules ? <RuleEditor rules={rules} live={live?.rules} errors={errors} onChange={(next) => { setRules(next); setJobId(undefined); }} /> : null}
+        {!selected ? <div className="p-4"><EmptyState icon="document" title="No policy selected" description="Pick a version on the left, or create a draft from the live policy to begin editing." /></div>
+          : selected.status !== "DRAFT" ? <div>
+            <p className="border-b border-border bg-canvas px-5 py-2 text-xs text-muted">{selected.status === "LIVE" ? "Live policy — read-only. Create a draft to change it." : "Archived policy — read-only."} These are its exact thresholds and terms.</p>
+            <RuleEditor rules={selected.rules} errors={[]} onChange={() => undefined} readOnly />
+          </div>
+          : rules ? <RuleEditor rules={rules} live={live?.rules} errors={errors} onChange={(next) => { setRules(next); setJobId(undefined); }} /> : null}
       </section>
       {report.data ? <SimulationReport report={report.data} /> : null}
     </div>
