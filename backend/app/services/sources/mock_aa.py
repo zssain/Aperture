@@ -23,6 +23,9 @@ from app.services.sources.base import (
 )
 
 _MERCHANTS = ("Zomato", "Swiggy", "Amazon", "BigBasket", "Uber")
+# Multiple gig platforms so a declared-gig applicant is not flagged by the D3
+# single-counterparty concentration detector for perfectly ordinary platform income.
+_GIG_PLATFORMS = ("SWIGGY DELIVERY", "ZOMATO DELIVERY", "RAPIDO CAPTAIN")
 _PERSONAS = ("SALARIED", "GIG", "BUSINESS")
 
 
@@ -91,26 +94,13 @@ class MockAccountAggregatorAdapter:
     def _generate(self, applicant_id: uuid.UUID, start: datetime, end: datetime) -> list[_Txn]:
         rng = random.Random(applicant_id.int % (2**32))
         persona = _PERSONAS[applicant_id.int % 3]
-        transactions: list[_Txn] = []
-        state = {"balance": 20_000_00, "index": 0}
+        drafts: list[tuple[date, str, int, str, str]] = []
         start_date, end_date = start.date(), end.date()
 
         def add(when: date, txn_type: str, paise: int, narration: str, merchant: str) -> None:
             if not (start_date <= when <= end_date):
                 return
-            state["balance"] += paise if txn_type == "CREDIT" else -paise
-            transactions.append(
-                _Txn(
-                    txn_id=f"MOCKAA-{applicant_id.hex[:8]}-{state['index']:05d}",
-                    value_date=f"{when.isoformat()}T10:00:00+00:00",
-                    txn_type=txn_type,
-                    amount=f"{paise / 100:.2f}",
-                    narration=narration,
-                    merchant=merchant,
-                    current_balance=f"{state['balance'] / 100:.2f}",
-                )
-            )
-            state["index"] += 1
+            drafts.append((when, txn_type, paise, narration, merchant))
 
         month = date(start.year, start.month, 1)
         while month <= end_date:
@@ -121,17 +111,18 @@ class MockAccountAggregatorAdapter:
                     _clamp_day(year, mon, 1 + rng.randint(0, 2)),
                     "CREDIT",
                     5_000_000 + rng.randint(-50_000, 50_000),
-                    "Salary credit",
+                    "NEFT salary credit ACME TECHNOLOGIES",
                     "ACME PAYROLL",
                 )
             elif persona == "GIG":
                 for _ in range(rng.randint(6, 10)):
+                    platform = rng.choice(_GIG_PLATFORMS)
                     add(
                         _clamp_day(year, mon, rng.randint(1, 27)),
                         "CREDIT",
                         300_000 + rng.randint(-100_000, 200_000),
-                        "Gig payout",
-                        "GIG PLATFORM",
+                        f"Weekly gig payout {platform.title()}",
+                        platform,
                     )
             else:
                 for _ in range(rng.randint(2, 4)):
@@ -139,28 +130,60 @@ class MockAccountAggregatorAdapter:
                         _clamp_day(year, mon, rng.randint(1, 27)),
                         "CREDIT",
                         8_000_000 + rng.randint(-2_000_000, 3_000_000),
-                        "Business inflow",
+                        "Client invoice settlement received",
                         "CLIENT SETTLEMENT",
                     )
 
             rent = 1_500_000 + rng.randint(-20_000, 20_000)
             emi = 1_200_000 + rng.randint(-10_000, 10_000)
             utility = 200_000 + rng.randint(-50_000, 50_000)
-            add(_clamp_day(year, mon, 5), "DEBIT", rent, "Rent debit", "URBAN RENTALS")
-            add(_clamp_day(year, mon, 7), "DEBIT", emi, "EMI debit", "HDFC EMI")
-            add(_clamp_day(year, mon, 12), "DEBIT", utility, "Utility bill", "BESCOM")
+            telecom = 59_900 + rng.randint(-10_000, 10_000)
+            add(_clamp_day(year, mon, 5), "DEBIT", rent, "House rent autopay", "URBAN RENTALS")
+            add(_clamp_day(year, mon, 7), "DEBIT", emi, "HDFC personal loan EMI", "HDFC EMI")
+            add(_clamp_day(year, mon, 12), "DEBIT", utility, "BESCOM electricity bill", "BESCOM")
+            add(
+                _clamp_day(year, mon, 14),
+                "DEBIT",
+                telecom,
+                "Airtel prepaid mobile recharge",
+                "AIRTEL",
+            )
             for _ in range(rng.randint(8, 15)):
                 add(
                     _clamp_day(year, mon, rng.randint(1, 27)),
                     "DEBIT",
                     rng.randint(15_000, 250_000),
-                    "UPI debit",
+                    "UPI purchase",
                     rng.choice(_MERCHANTS),
                 )
 
             month = date(year + 1, 1, 1) if mon == 12 else date(year, mon + 1, 1)
 
-        transactions.sort(key=lambda t: (t.value_date, t.txn_id))
+        # The running balance must be computed in ledger order, and that order must be
+        # unambiguous to any consumer that sorts by timestamp (D5 reconciles consecutive
+        # balances). Sort by day first (stable, so within-day generation order holds),
+        # then stamp each transaction with a distinct, strictly increasing time-of-day
+        # before assigning balances.
+        drafts.sort(key=lambda draft: draft[0])
+        transactions: list[_Txn] = []
+        balance = 20_000_00
+        day_sequence: dict[date, int] = {}
+        for index, (when, txn_type, paise, narration, merchant) in enumerate(drafts):
+            offset = day_sequence.get(when, 0)
+            day_sequence[when] = offset + 1
+            balance += paise if txn_type == "CREDIT" else -paise
+            stamp = f"{10 + offset // 60:02d}:{offset % 60:02d}:00+00:00"
+            transactions.append(
+                _Txn(
+                    txn_id=f"MOCKAA-{applicant_id.hex[:8]}-{index:05d}",
+                    value_date=f"{when.isoformat()}T{stamp}",
+                    txn_type=txn_type,
+                    amount=f"{paise / 100:.2f}",
+                    narration=narration,
+                    merchant=merchant,
+                    current_balance=f"{balance / 100:.2f}",
+                )
+            )
         return transactions
 
 

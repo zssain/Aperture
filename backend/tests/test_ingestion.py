@@ -4,13 +4,20 @@ import asyncio
 import pathlib
 import uuid
 from datetime import UTC, datetime, timedelta
+from itertools import pairwise
 
 import pytest
 from app.core.context import RequestContext
 from app.models.applicant import Applicant
 from app.models.audit import LedgerEntry
 from app.models.consent import Consent
-from app.models.enums import SourceConnectionStatus, SourceTier, SourceType, UserRole
+from app.models.enums import (
+    EventDirection,
+    SourceConnectionStatus,
+    SourceTier,
+    SourceType,
+    UserRole,
+)
 from app.models.ledger import LedgerEvent
 from app.models.source import SourceConnection, SourceSnapshot
 from app.services.consent.service import create_consent, revoke_consent
@@ -43,7 +50,10 @@ _COUNTERPARTY_NAMES = {
     "BESCOM",
     "ACME PAYROLL",
     "CLIENT SETTLEMENT",
-    "GIG PLATFORM",
+    "SWIGGY DELIVERY",
+    "ZOMATO DELIVERY",
+    "RAPIDO CAPTAIN",
+    "AIRTEL",
     "Zomato",
     "Swiggy",
     "Amazon",
@@ -144,6 +154,25 @@ async def test_mock_aa_is_deterministic(db_session: AsyncSession) -> None:
     assert payload_a.raw == payload_b.raw  # byte-identical provider payload
     assert first.normalize(payload_a) == second.normalize(payload_b)
     assert len(payload_a.raw["transactions"]) > 0
+
+
+async def test_mock_aa_balances_reconcile_in_timestamp_order(db_session: AsyncSession) -> None:
+    """The simulated statement must survive D5: consecutive balances, ordered the way
+    the detector orders events, must reconcile with the signed amounts — and every
+    timestamp must be unique so that ordering is unambiguous."""
+    _context, _applicant, _consent, connections = await _setup(db_session)
+    adapter = MockAccountAggregatorAdapter()
+    events = adapter.normalize(await adapter.fetch(connections[0], _period()))
+
+    timestamps = [event.occurred_at for event in events]
+    assert len(set(timestamps)) == len(timestamps)
+
+    ordered = sorted(events, key=lambda event: event.occurred_at)
+    for prev, cur in pairwise(ordered):
+        assert prev.balance_paise is not None and cur.balance_paise is not None
+        credit = cur.direction == EventDirection.CREDIT
+        signed = cur.amount_paise if credit else -cur.amount_paise
+        assert cur.balance_paise == prev.balance_paise + signed
 
 
 async def test_mock_aa_ingests_and_is_idempotent(db_session: AsyncSession) -> None:
@@ -287,6 +316,34 @@ def test_huge_file_rejected_at_row_cap() -> None:
     with pytest.raises(RowCapExceededError) as excinfo:
         DocumentAdapter().parse(data, "huge_50k_rows.csv")
     assert "20,000" in str(excinfo.value)
+
+
+def test_bank_statement_csv_with_debit_credit_columns() -> None:
+    """A real statement export (preamble row, Details/Debit/Credit/Balance columns,
+    comma-grouped amounts, summary footer) parses without editing."""
+    csv = (
+        "Table 1\n"
+        "Date,Details,Ref No/Cheque No,Debit,Credit,Balance,\n"
+        '01/11/2025," WDL TFR UPI/DR/Blinkit",,411.00,,847.74,\n'
+        '02/11/2025," DEP TFR UPI/CR/Salary",,,"15,000.00",15847.74,\n'
+        ",,,,,,\n"
+        "Statement Summary : 01-11-2025 To 30-11-2025,,,,,,\n"
+        "This is a computer generated statement.,,,,,,\n"
+    )
+    result = DocumentAdapter().parse(csv.encode(), "bank statement.csv")
+    assert len(result.events) == 2
+    debit, credit = result.events
+    assert debit.direction is EventDirection.DEBIT and debit.amount_paise == 41100
+    assert credit.direction is EventDirection.CREDIT and credit.amount_paise == 1_500_000
+    # blank + two footer lines are rejected, never crash the parse.
+    assert len(result.rejected) == 3
+
+
+def test_headerless_csv_names_the_expected_columns() -> None:
+    with pytest.raises(SchemaError) as excinfo:
+        DocumentAdapter().parse(b"foo,bar\n1,2\n", "x.csv")
+    message = str(excinfo.value)
+    assert "Date" in message and "Description" in message and "Amount" in message
 
 
 def test_password_protected_pdf_is_a_clean_schema_error() -> None:

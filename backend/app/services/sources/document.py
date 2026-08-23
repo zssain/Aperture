@@ -33,6 +33,37 @@ MAX_PDF_PAGES = 50
 REQUIRED_COLUMNS = ("Date", "Description", "Amount")
 OPTIONAL_COLUMNS = ("Balance",)
 
+# Real bank statements vary the column names and split the amount into separate
+# debit/credit columns. Match a header row against these alias sets (exact, after
+# lower-casing) so common exports (HDFC/ICICI/SBI/Axis/Kotak) parse without editing.
+_DATE_ALIASES = frozenset(
+    {"date", "txn date", "transaction date", "value date", "tran date", "posting date", "date "}
+)
+_DESC_ALIASES = frozenset(
+    {
+        "description",
+        "details",
+        "narration",
+        "particulars",
+        "remarks",
+        "transaction details",
+        "transaction remarks",
+        "description/narration",
+    }
+)
+_AMOUNT_ALIASES = frozenset({"amount", "transaction amount", "amount (inr)", "amount(inr)"})
+_DEBIT_ALIASES = frozenset(
+    {"debit", "withdrawal", "withdrawals", "withdrawal amt", "withdrawal amount", "debit amount", "dr"}
+)
+_CREDIT_ALIASES = frozenset(
+    {"credit", "deposit", "deposits", "deposit amt", "deposit amount", "credit amount", "cr"}
+)
+_BALANCE_ALIASES = frozenset(
+    {"balance", "closing balance", "running balance", "balance (inr)", "available balance"}
+)
+# Cap how many leading rows we scan for a header, so a header-less file fails fast.
+_MAX_HEADER_SCAN = 25
+
 _DATE_FORMATS = (
     "%Y-%m-%d",
     "%d/%m/%Y",
@@ -110,19 +141,27 @@ class DocumentAdapter:
             raise SchemaError("File is not valid UTF-8 text.") from exc
 
         reader = csv.reader(io.StringIO(text))
-        try:
-            header = next(reader)
-        except StopIteration as exc:
-            raise SchemaError("File is empty.") from exc
 
-        index = _column_index(header)
+        # Scan the first few rows for a header — statements often precede it with a
+        # title row ("Table 1"), a bank name, or a statement-period line.
+        index: _ColumnIndex | None = None
+        header_line = 0
+        for scanned, raw in enumerate(reader, start=1):
+            candidate = _column_index(raw)
+            if candidate is not None:
+                index, header_line = candidate, scanned
+                break
+            if scanned >= _MAX_HEADER_SCAN:
+                break
+        if index is None:
+            raise SchemaError(_HEADER_HINT)
 
         events: list[NormalizedEvent] = []
         rejected: list[RejectedRow] = []
         balances: list[tuple[int, int]] = []  # (amount_signed_paise, balance_paise)
         row_count = 0
 
-        for line_number, raw_row in enumerate(reader, start=2):
+        for line_number, raw_row in enumerate(reader, start=header_line + 1):
             row_count += 1
             if row_count > MAX_ROWS:
                 raise RowCapExceededError()
@@ -228,37 +267,63 @@ class DocumentAdapter:
 class _ColumnIndex:
     date: int
     description: int
-    amount: int
+    # Either a single signed/typed `amount` column, or separate `debit`/`credit`.
+    amount: int | None
+    debit: int | None
+    credit: int | None
     balance: int | None
 
 
-def _column_index(header: list[str]) -> _ColumnIndex:
+_HEADER_HINT = (
+    "Could not find the transaction columns. The file needs a header row with Date "
+    "and Description columns, plus either an Amount column or separate Debit and "
+    "Credit columns (Balance optional)."
+)
+
+
+def _column_index(header: list[str]) -> _ColumnIndex | None:
+    """Interpret ``header`` as a statement header, or return None if it is not one
+    (e.g. a preamble/title row). Never raises — callers scan for the header row."""
     normalized = [cell.strip().lower() for cell in header]
-    lookup = {name: normalized.index(name.lower()) for name in normalized}
 
-    def find(name: str) -> int | None:
-        key = name.lower()
-        return lookup.get(key)
+    def find(aliases: frozenset[str]) -> int | None:
+        for position, cell in enumerate(normalized):
+            if cell in aliases:
+                return position
+        return None
 
-    missing = [name for name in REQUIRED_COLUMNS if find(name) is None]
-    if missing:
-        raise SchemaError(
-            "Missing required column(s): "
-            f"{', '.join(missing)}. Expected columns: {', '.join(REQUIRED_COLUMNS)} "
-            f"(optional: {', '.join(OPTIONAL_COLUMNS)})."
-        )
-    date_i = find("Date")
-    desc_i = find("Description")
-    amount_i = find("Amount")
-    assert date_i is not None and desc_i is not None and amount_i is not None
-    return _ColumnIndex(date_i, desc_i, amount_i, find("Balance"))
+    date_i = find(_DATE_ALIASES)
+    desc_i = find(_DESC_ALIASES)
+    amount_i = find(_AMOUNT_ALIASES)
+    debit_i = find(_DEBIT_ALIASES)
+    credit_i = find(_CREDIT_ALIASES)
+    if date_i is None or desc_i is None:
+        return None
+    if amount_i is None and (debit_i is None or credit_i is None):
+        return None
+    return _ColumnIndex(date_i, desc_i, amount_i, debit_i, credit_i, find(_BALANCE_ALIASES))
+
+
+def _cell(row: list[str], position: int | None) -> str:
+    return row[position].strip() if position is not None and position < len(row) else ""
+
+
+def _magnitude_or_none(raw: str) -> int | None:
+    """Parse a debit/credit cell to positive paise, or None if empty/zero/garbage."""
+    if not raw.strip():
+        return None
+    try:
+        paise = _parse_amount(raw)[0]
+    except ValueError:
+        return None
+    return paise or None
 
 
 def _parse_csv_row(
     row: list[str], index: _ColumnIndex, line_number: int
 ) -> tuple[NormalizedEvent, tuple[int, int] | None] | RejectedRow:
-    max_needed = max(index.date, index.description, index.amount)
-    if len(row) <= max_needed:
+    needed = [index.date, index.description, index.amount, index.debit, index.credit]
+    if len(row) <= max(pos for pos in needed if pos is not None):
         return RejectedRow(line_number, "too few columns")
 
     date_raw = row[index.date].strip()
@@ -269,10 +334,22 @@ def _parse_csv_row(
     except ValueError as exc:
         return RejectedRow(line_number, str(exc))
 
-    try:
-        amount_paise, direction = _parse_amount(row[index.amount])
-    except ValueError as exc:
-        return RejectedRow(line_number, str(exc))
+    if index.amount is not None:
+        try:
+            amount_paise, direction = _parse_amount(row[index.amount])
+        except ValueError as exc:
+            return RejectedRow(line_number, str(exc))
+    else:
+        # Separate debit (outflow) / credit (inflow) columns — the populated one
+        # determines both magnitude and direction.
+        debit = _magnitude_or_none(_cell(row, index.debit))
+        credit = _magnitude_or_none(_cell(row, index.credit))
+        if debit is not None and (credit is None or debit >= credit):
+            amount_paise, direction = debit, EventDirection.DEBIT
+        elif credit is not None:
+            amount_paise, direction = credit, EventDirection.CREDIT
+        else:
+            return RejectedRow(line_number, "no debit or credit amount")
 
     balance_paise: int | None = None
     balance_pair: tuple[int, int] | None = None
