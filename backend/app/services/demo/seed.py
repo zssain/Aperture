@@ -1,4 +1,9 @@
-"""Feature-flagged synthetic demo seed that exercises the production decision paths."""
+"""Feature-flagged synthetic demo seed that exercises the production decision paths.
+
+The persona corpus lives in :mod:`app.services.demo.personas`; this module persists it
+and runs every applicant through the REAL pipeline — classification, snapshot, four
+assessments, policy engine, recourse — so nothing the demo shows is stubbed.
+"""
 
 import hashlib
 import json
@@ -28,7 +33,6 @@ from app.models.enums import (
     ModelStatus,
     PolicyStatus,
     SourceConnectionStatus,
-    SourceTier,
     SourceType,
     UserRole,
 )
@@ -42,6 +46,7 @@ from app.models.user import User
 from app.services.catalog.builder import build_and_publish_catalog
 from app.services.classification.service import TxnEvent, classify
 from app.services.demo.event_generator import income_consistency_sequence
+from app.services.demo.personas import PERSONAS, TRANSITION_REF, PersonaSpec, build_corpus
 from app.services.events.service import ingest_event
 from app.services.orchestrator.service import decide
 from app.services.policy.defaults import seed_policy_v1
@@ -50,20 +55,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 DEMO_PASSWORD = "Demo-Only-Strong-Passw0rd!"
 ROOT = Path(__file__).resolve().parents[4]
-PERSONAS = (
-    "Asha Gig Worker",
-    "Ravi Thin File",
-    "Meera Manipulation Review",
-    "Kabir High Risk",
-    "Nila Sparse Evidence",
-    "Arjun Near Boundary",
-    "Fatima Salaried",
-    "Dev Small Business",
-    "Leela Utility History",
-    "Mohan Starter Eligible",
-    "Sara Mixed Income",
-    "Vikram Newly Eligible",
-)
 
 
 class DemoEmbeddingProvider:
@@ -99,7 +90,7 @@ def _trace(
     occurred_at: datetime,
     direction: EventDirection,
     amount_paise: int,
-    balance_paise: int,
+    balance_paise: int | None,
     description: str,
     counterparty_hash: str,
     connection_id: uuid.UUID,
@@ -125,32 +116,30 @@ async def _create_persona(
     session: AsyncSession,
     *,
     tenant: Tenant,
-    index: int,
-    name: str,
+    spec: PersonaSpec,
     anchor: datetime,
 ) -> Application:
-    ref = f"demo-persona-{index + 1:02d}"
-    applicant = Applicant(tenant_id=tenant.id, external_ref=ref, display_name=name)
+    corpus = build_corpus(spec, anchor)
+    applicant = Applicant(tenant_id=tenant.id, external_ref=spec.ref, display_name=spec.name)
     session.add(applicant)
     await session.flush()
-    requested = 20_000_000 if index in {3, 11} else 5_000_000 + index * 250_000
     application = Application(
         tenant_id=tenant.id,
         applicant_id=applicant.id,
-        occupation="self-employed" if index in {0, 7, 10, 11} else "salaried",
-        requested_amount_paise=requested,
-        requested_tenor_months=12,
+        occupation=spec.occupation,
+        requested_amount_paise=spec.requested_amount_paise,
+        requested_tenor_months=spec.requested_tenor_months,
     )
     session.add(application)
     consent = Consent(
         tenant_id=tenant.id,
         applicant_id=applicant.id,
         status=ConsentStatus.GRANTED,
-        purpose="synthetic demonstration of ongoing underwriting",
+        purpose="Credit underwriting (sandbox demonstration)",
         scope={"sources": [SourceType.BANK.value], "demo": True},
-        granted_at=anchor - timedelta(days=220),
+        granted_at=anchor - timedelta(days=30 * spec.months + 10),
         expires_at=anchor + timedelta(days=365),
-        artefact_hash=hashlib.sha256(f"demo-consent:{ref}".encode()).hexdigest(),
+        artefact_hash=hashlib.sha256(f"demo-consent:{spec.ref}".encode()).hexdigest(),
     )
     session.add(consent)
     await session.flush()
@@ -159,85 +148,62 @@ async def _create_persona(
         applicant_id=applicant.id,
         consent_id=consent.id,
         source_type=SourceType.BANK,
-        tier=SourceTier.AA_VERIFIED,
+        tier=spec.tier,
         provider="DEMO_SYNTHETIC",
         status=SourceConnectionStatus.CONNECTED,
     )
     session.add(connection)
     await session.flush()
-    months = 2 if index == 4 else 7
     snapshot = SourceSnapshot(
         tenant_id=tenant.id,
         source_connection_id=connection.id,
         applicant_id=applicant.id,
-        tier=SourceTier.AA_VERIFIED,
+        tier=spec.tier,
         fetched_at=anchor,
-        period_start=anchor - timedelta(days=months * 30 + 5),
-        period_end=anchor - timedelta(days=2),
-        content_hash=hashlib.sha256(f"demo-corpus:{ref}".encode()).hexdigest(),
-        record_count=months * 3,
-        ingested_count=months * 3,
+        period_start=corpus.period_start,
+        period_end=corpus.period_end,
+        content_hash=hashlib.sha256(f"demo-corpus:{spec.ref}".encode()).hexdigest(),
+        record_count=len(corpus.events),
+        ingested_count=len(corpus.events),
         payload={"synthetic_demo": True},
     )
     session.add(snapshot)
     await session.flush()
 
-    balance = 2_000_000
-    for month in reversed(range(months)):
-        when = anchor - timedelta(days=30 * month + 16)
-        base_income = 3_000_000 if index == 11 else 4_500_000 + index * 125_000
-        income = base_income
-        if index in {3, 5, 10}:
-            income += ((month % 3) - 1) * 2_000_000
-        income_text = (
-            "gig partner payout"
-            if index in {0, 9}
-            else "invoice business settlement"
-            if index in {7, 10, 11}
-            else "monthly salary payroll credit"
+    for index, event in enumerate(corpus.events):
+        event_id = uuid.uuid5(uuid.NAMESPACE_URL, f"aperture:{spec.ref}:{index}")
+        category, method = _trace(
+            event_id=event_id,
+            occurred_at=event.occurred_at,
+            direction=event.direction,
+            amount_paise=event.amount_paise,
+            balance_paise=event.balance_paise,
+            description=event.description,
+            counterparty_hash=event.counterparty_hash,
+            connection_id=connection.id,
         )
-        rows = (
-            (when, EventDirection.CREDIT, max(500_000, income), income_text, "income"),
-            (when + timedelta(days=2), EventDirection.DEBIT, 1_200_000, "monthly rent", "rent"),
-            (when + timedelta(days=4), EventDirection.DEBIT, 350_000, "utility bill", "utility"),
+        session.add(
+            LedgerEvent(
+                id=event_id,
+                tenant_id=tenant.id,
+                applicant_id=applicant.id,
+                source_connection_id=connection.id,
+                source_snapshot_id=snapshot.id,
+                event_type=EvidenceEventType.TRANSACTION,
+                direction=event.direction,
+                amount_paise=event.amount_paise,
+                balance_paise=event.balance_paise,
+                description=event.description,
+                category=category,
+                classification_method=method,
+                classifier_version="clf-v2",
+                counterparty_hash=event.counterparty_hash,
+                occurred_at=event.occurred_at,
+                received_at=anchor,
+                idempotency_key=f"demo:{spec.ref}:{index}",
+                payload={"synthetic_demo": True},
+            )
         )
-        for position, (occurred, direction, amount, description, counterparty) in enumerate(rows):
-            balance += amount if direction is EventDirection.CREDIT else -amount
-            event_id = uuid.uuid5(
-                uuid.NAMESPACE_URL, f"aperture:{ref}:{month}:{position}:{description}"
-            )
-            category, method = _trace(
-                event_id=event_id,
-                occurred_at=occurred,
-                direction=direction,
-                amount_paise=amount,
-                balance_paise=balance,
-                description=description,
-                counterparty_hash=f"demo-{ref}-{counterparty}",
-                connection_id=connection.id,
-            )
-            session.add(
-                LedgerEvent(
-                    id=event_id,
-                    tenant_id=tenant.id,
-                    applicant_id=applicant.id,
-                    source_connection_id=connection.id,
-                    source_snapshot_id=snapshot.id,
-                    event_type=EvidenceEventType.TRANSACTION,
-                    direction=direction,
-                    amount_paise=amount,
-                    balance_paise=balance,
-                    description=description,
-                    category=category,
-                    classification_method=method,
-                    classifier_version="clf-v2",
-                    counterparty_hash=f"demo-{ref}-{counterparty}",
-                    occurred_at=occurred,
-                    received_at=anchor,
-                    idempotency_key=f"demo:{ref}:{month}:{position}",
-                    payload={"synthetic_demo": True},
-                )
-            )
     return application
 
 
@@ -251,7 +217,10 @@ async def seed_demo() -> None:
                 MerchantCatalogVersion.status == MerchantCatalogStatus.LIVE
             )
         )
-        if catalog is None or catalog.version != "demo-catalog-v2":
+        if catalog is None:
+            # Only publish the hash-embedding catalogue on a virgin database. If any
+            # LIVE catalogue exists (for example one built with a real embedding
+            # provider) it is left untouched so runtime queries stay consistent.
             await build_and_publish_catalog(
                 session, DemoEmbeddingProvider(), version="demo-catalog-v2"
             )
@@ -339,16 +308,15 @@ async def seed_demo() -> None:
         await session.commit()
 
         applications: list[Application] = []
-        for index, name in enumerate(PERSONAS):
-            ref = f"demo-persona-{index + 1:02d}"
+        for spec in PERSONAS:
             applicant = await session.scalar(
                 select(Applicant).where(
-                    Applicant.tenant_id == tenant.id, Applicant.external_ref == ref
+                    Applicant.tenant_id == tenant.id, Applicant.external_ref == spec.ref
                 )
             )
             if applicant is None:
                 application = await _create_persona(
-                    session, tenant=tenant, index=index, name=name, anchor=started
+                    session, tenant=tenant, spec=spec, anchor=started
                 )
             else:
                 found_application = await session.scalar(
@@ -358,7 +326,7 @@ async def seed_demo() -> None:
                     )
                 )
                 if found_application is None:
-                    raise RuntimeError(f"incomplete existing demo persona: {ref}")
+                    raise RuntimeError(f"incomplete existing demo persona: {spec.ref}")
                 application = found_application
             applications.append(application)
         await session.commit()
@@ -381,7 +349,10 @@ async def seed_demo() -> None:
                     generate_recourse=True,
                 )
 
-        transition_application = applications[11]
+        transition_index = next(
+            index for index, spec in enumerate(PERSONAS) if spec.ref == TRANSITION_REF
+        )
+        transition_application = applications[transition_index]
         transition_change = await session.scalar(
             select(DecisionChange).where(
                 DecisionChange.tenant_id == tenant.id,
@@ -425,16 +396,17 @@ async def seed_demo() -> None:
             )
             or 0
         )
-        if decision_count < 13 or action_count < 2:
+        if decision_count < 13 or action_count < 4:
             raise RuntimeError(
                 "demo book is incomplete or lacks a realistic mix: "
-                f"{decision_count}, {action_count}"
+                f"{decision_count} decisions, {action_count} distinct actions"
             )
         elapsed = (datetime.now(UTC) - started).total_seconds()
         if elapsed >= 120:
             raise RuntimeError(f"demo seed exceeded two-minute budget: {elapsed:.1f}s")
     print(
-        "Demo seeded: live catalogue, 1 tenant, 4 users, 12 full event-corpus applicants, "
+        "Demo seeded: live catalogue, 1 tenant, 4 users, "
+        f"{len(PERSONAS)} full event-corpus applicants, "
         f"{decision_count} decisions, and an improved eligibility change ({elapsed:.1f}s)."
     )
     print(f"Demo password: {DEMO_PASSWORD}")
