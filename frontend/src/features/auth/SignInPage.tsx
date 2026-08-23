@@ -17,7 +17,7 @@ interface SignInLocationState {
 const DEMO_ACCOUNTS: Array<{ label: string; email: string }> = [
   { label: "Credit analyst", email: "creditanalyst@aperture.com" },
   { label: "Policy owner", email: "policyowner@aperture.com" },
-  { label: "Fraud reviewer", email: "frawdreviewer@aperture.com" },
+  { label: "Fraud reviewer", email: "fraudreviewer@aperture.com" },
   { label: "Auditor", email: "auditor@aperture.com" },
 ];
 const DEMO_PASSWORD = "123456";

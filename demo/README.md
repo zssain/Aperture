@@ -18,7 +18,7 @@ Sign-in accounts (all use the password `123456`):
 |---|---|
 | creditanalyst@aperture.com | Works the queue |
 | policyowner@aperture.com | Policy Studio + health |
-| frawdreviewer@aperture.com | Fraud queue |
+| fraudreviewer@aperture.com | Fraud queue |
 | auditor@aperture.com | Read-only + replay |
 
 ## The seeded book (what the queue shows after reset)

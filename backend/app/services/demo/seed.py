@@ -59,7 +59,7 @@ DEMO_PASSWORD = "123456"  # sandbox-only demo credential
 DEMO_EMAILS: dict[UserRole, str] = {
     UserRole.CREDIT_ANALYST: "creditanalyst@aperture.com",
     UserRole.CREDIT_POLICY_OWNER: "policyowner@aperture.com",
-    UserRole.FRAUD_REVIEWER: "frawdreviewer@aperture.com",
+    UserRole.FRAUD_REVIEWER: "fraudreviewer@aperture.com",
     UserRole.AUDITOR: "auditor@aperture.com",
 }
 ROOT = Path(__file__).resolve().parents[4]
