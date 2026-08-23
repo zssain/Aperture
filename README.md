@@ -37,8 +37,12 @@ Open `http://localhost:5173`; liveness is `/api/v1/health` and readiness is
 ```bash
 make lint && make typecheck && make test
 cd frontend && npm run test:e2e
-DEMO_SEED_ENABLED=true make seed-demo
+make demo-reset          # seed the demo book + generate demo/statements (~5 s)
 ```
+
+For a live demo, see [docs/DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md) and
+[demo/README.md](demo/README.md). `make demo-reset` / `make demo-flip` / `make demo-ids`
+drive the rehearsed flow; `make dev` now also starts the job worker.
 
 ## Environment variables
 
@@ -71,6 +75,8 @@ AWS credentials use the standard SDK chain and are never application values.
 |---|---|
 | Decision pipeline, security middleware, pgvector catalogue | BUILT |
 | Local Compose, production images, deployment verifier | BUILT |
+| Demo kit: seeded persona book, statement files, one-command reset/flip | BUILT (sandbox) |
+| Connect-a-bank UX (bank picker + consent artefact panel) over the simulated AA | BUILT; real AA integration is ROADMAP |
 | ECS task definition and AWS procedure | BUILT artifact |
 | Provisioned ECR/ECS/RDS/S3/KMS/Secrets Manager | DESIGNED, not provisioned here |
 | Real lender integrations, OIDC/SSO, automated retraining | ROADMAP |
