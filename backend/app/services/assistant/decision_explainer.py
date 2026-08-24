@@ -14,14 +14,9 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.core.logging import get_logger
-from app.core.providers.base import ProviderNotConfigured
-from app.core.providers.registry import configured_registry
 from app.schemas.case import CaseOut
+from app.services.assistant.llm import complete_with_fallback
 from app.services.cases.assembler import assemble_case
-
-logger = get_logger(__name__)
 
 _TAB = {
     "risk": "assessment",
@@ -228,20 +223,11 @@ async def explain_decision(
     facts, citations = _build_facts(case)
     clean_question = question.strip()[:500] or "Explain this decision."
 
-    fallback = DecisionExplanation(
-        answer=_deterministic_answer(facts), citations=citations, used_llm=False
+    parsed = await complete_with_fallback(
+        _SYSTEM, {"question": clean_question, "facts": facts}, _Explanation
     )
-    if not settings.llm_notices_enabled:
-        return fallback
-    try:
-        provider = configured_registry().llm(settings.llm_provider)
-    except (ProviderNotConfigured, RuntimeError):
-        return fallback
-    try:
-        parsed = await provider.complete(
-            _SYSTEM, {"question": clean_question, "facts": facts}, _Explanation
+    if parsed is None:  # LLM disabled or every provider errored — grounded summary.
+        return DecisionExplanation(
+            answer=_deterministic_answer(facts), citations=citations, used_llm=False
         )
-    except Exception as exc:  # provider/timeout/parse — degrade to the grounded summary
-        logger.info("decision_explain_fallback", reason=type(exc).__name__)
-        return fallback
     return DecisionExplanation(answer=parsed.answer.strip(), citations=citations, used_llm=True)

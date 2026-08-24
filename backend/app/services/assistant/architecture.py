@@ -11,12 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.config import settings
-from app.core.logging import get_logger
-from app.core.providers.base import ProviderNotConfigured
-from app.core.providers.registry import configured_registry
-
-logger = get_logger(__name__)
+from app.services.assistant.llm import complete_with_fallback
 
 
 class _Topic(BaseModel):
@@ -219,12 +214,6 @@ def _fallback(candidates: list[_Topic]) -> ArchitectureAnswer:
 async def answer_architecture(question: str) -> ArchitectureAnswer:
     clean = question.strip()[:500]
     candidates = _candidates(clean)
-    if not settings.llm_notices_enabled:
-        return _fallback(candidates)
-    try:
-        provider = configured_registry().llm(settings.llm_provider)
-    except (ProviderNotConfigured, RuntimeError):
-        return _fallback(candidates)
     payload: dict[str, Any] = {
         "question": clean,
         "candidates": [
@@ -232,10 +221,8 @@ async def answer_architecture(question: str) -> ArchitectureAnswer:
             for t in candidates
         ],
     }
-    try:
-        parsed = await provider.complete(_SYSTEM, payload, _ArchAnswer)
-    except Exception as exc:
-        logger.info("architecture_answer_fallback", reason=type(exc).__name__)
+    parsed = await complete_with_fallback(_SYSTEM, payload, _ArchAnswer)
+    if parsed is None:  # LLM disabled or every provider errored — keyword fallback.
         return _fallback(candidates)
     # Ground the citations: keep only keys the model was actually given.
     keys = [k for k in parsed.topic_keys if k in _ALL_PATHS] or [t.key for t in candidates[:3]]

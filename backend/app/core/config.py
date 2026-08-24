@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     llm_notices_enabled: bool = False
     llm_notice_timeout_seconds: float = 5.0
     llm_provider: str = "noop"
+    # A best-effort second LLM the assistants try if the primary errors, before they
+    # drop to the deterministic summary. Registered only when its credentials exist;
+    # never a hard dependency. Set to "" / "noop" to disable the backup.
+    llm_backup_provider: str = "gemini"
     embedding_provider: str = "noop"
     embedding_model_id: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dimension: int = 384

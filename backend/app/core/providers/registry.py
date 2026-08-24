@@ -1,10 +1,33 @@
 """Small explicit provider registry; business services depend only on protocols."""
 
+import contextlib
 from dataclasses import dataclass, field
 
 from app.core.config import Settings, settings
-from app.core.providers.base import EmbeddingProvider, LLMProvider, ProviderNotConfigured
+from app.core.providers.base import (
+    EmbeddingProvider,
+    LLMProvider,
+    ProviderNotConfigured,
+    ProviderUnavailable,
+)
 from app.core.providers.noop import NoopEmbeddingProvider, NoopLLMProvider
+
+
+def _build_llm(name: str, config: Settings) -> LLMProvider:
+    """Construct one LLM provider by name (each validates its own credentials)."""
+    if name == "bedrock":
+        from app.core.providers.llm_bedrock import BedrockLLMProvider
+
+        return BedrockLLMProvider(config)
+    if name == "gemini":
+        from app.core.providers.llm_gemini import GeminiLLMProvider
+
+        return GeminiLLMProvider(config)
+    if name == "openai":
+        from app.core.providers.llm_openai import OpenAILLMProvider
+
+        return OpenAILLMProvider(config)
+    raise ProviderNotConfigured(f"unknown LLM provider: {name}")
 
 
 @dataclass
@@ -54,20 +77,15 @@ class ProviderRegistry:
             registry.embeddings["gemini"] = GeminiEmbeddingProvider(config)
         elif config.embedding_provider != "noop":
             raise ProviderNotConfigured(f"unknown embedding provider: {config.embedding_provider}")
-        if config.llm_provider == "bedrock":
-            from app.core.providers.llm_bedrock import BedrockLLMProvider
-
-            registry.llms["bedrock"] = BedrockLLMProvider(config)
-        elif config.llm_provider == "gemini":
-            from app.core.providers.llm_gemini import GeminiLLMProvider
-
-            registry.llms["gemini"] = GeminiLLMProvider(config)
-        elif config.llm_provider == "openai":
-            from app.core.providers.llm_openai import OpenAILLMProvider
-
-            registry.llms["openai"] = OpenAILLMProvider(config)
-        elif config.llm_provider != "noop":
-            raise ProviderNotConfigured(f"unknown LLM provider: {config.llm_provider}")
+        if config.llm_provider != "noop":
+            # The primary is strict: a misconfigured primary should fail loudly.
+            registry.llms[config.llm_provider] = _build_llm(config.llm_provider, config)
+        # The backup is best-effort: the assistants try it only if the primary errors,
+        # so a missing key or unreachable backup must never break the registry itself.
+        backup = config.llm_backup_provider
+        if backup and backup not in {"noop", config.llm_provider}:
+            with contextlib.suppress(ProviderNotConfigured, ProviderUnavailable):
+                registry.llms[backup] = _build_llm(backup, config)
         return registry
 
 

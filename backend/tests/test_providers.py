@@ -37,3 +37,37 @@ def test_external_embedding_requires_explicit_opt_in() -> None:
                 allow_external_embeddings=False,
             )
         )
+
+
+def _reg_settings(**overrides: object) -> Settings:
+    return Settings(
+        database_url="postgresql+asyncpg://x:x@localhost/x",
+        frontend_origin="http://localhost:5173",
+        **overrides,
+    )
+
+
+def test_gemini_backup_registered_when_key_present() -> None:
+    registry = ProviderRegistry.from_settings(
+        _reg_settings(
+            llm_provider="openai",
+            openai_api_key="sk-test",
+            llm_backup_provider="gemini",
+            gemini_new_api_key="AIza-test",
+        )
+    )
+    assert "openai" in registry.llms
+    assert "gemini" in registry.llms  # backup available as a fallback
+
+
+def test_unknown_backup_provider_never_breaks_the_registry() -> None:
+    # An unregisterable backup is best-effort: it is suppressed, and the primary still builds.
+    registry = ProviderRegistry.from_settings(
+        _reg_settings(
+            llm_provider="openai",
+            openai_api_key="sk-test",
+            llm_backup_provider="bogus",
+        )
+    )
+    assert "openai" in registry.llms
+    assert "bogus" not in registry.llms
