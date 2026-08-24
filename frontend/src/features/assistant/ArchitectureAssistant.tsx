@@ -37,10 +37,34 @@ export function ArchitectureAssistant() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Ask about the architecture"
-        className="fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-pill border border-accent bg-accent px-4 py-2.5 text-sm font-medium text-surface shadow-modal transition-opacity duration-fast hover:opacity-90"
+        className={[
+          "group fixed bottom-5 right-5 z-30 flex items-center gap-2 rounded-pill",
+          "bg-accent py-1.5 pl-4 pr-1.5 text-sm font-medium text-surface",
+          // Lift on hover using the design system's overlay shadows; settle on press.
+          "shadow-drawer transition-[box-shadow,transform] duration-menu ease-out",
+          "hover:-translate-y-0.5 hover:shadow-modal active:translate-y-0 active:scale-[0.98]",
+        ].join(" ")}
       >
-        <Icon name="sparkle" size={18} />
+        <Icon
+          name="sparkle"
+          size={18}
+          className="transition-transform duration-menu ease-out group-hover:rotate-90"
+        />
         <span className="hidden sm:inline">Ask the codebase</span>
+        {/* A circular arrow chip: on hover the arrow slides out to the right while a
+            second slides in from the left — the micro-interaction, in navy/accent. */}
+        <span className="relative grid h-7 w-7 place-items-center overflow-hidden rounded-pill bg-surface/15">
+          <Icon
+            name="arrow-right"
+            size={14}
+            className="absolute transition-transform duration-menu ease-out group-hover:translate-x-7"
+          />
+          <Icon
+            name="arrow-right"
+            size={14}
+            className="absolute -translate-x-7 transition-transform duration-menu ease-out group-hover:translate-x-0"
+          />
+        </span>
       </button>
 
       <Modal
@@ -78,7 +102,7 @@ export function ArchitectureAssistant() {
                 type="button"
                 onClick={() => submit(s)}
                 disabled={ask.isPending}
-                className="rounded-pill border border-border-strong bg-surface px-3 py-1 text-xs text-ink transition-colors duration-fast hover:bg-sunken disabled:opacity-50"
+                className="rounded-pill border border-border-strong bg-surface px-3 py-1 text-xs text-ink transition-[color,background-color,border-color,transform] duration-fast hover:-translate-y-px hover:border-accent/50 hover:text-accent active:translate-y-0 disabled:opacity-50"
               >
                 {s}
               </button>

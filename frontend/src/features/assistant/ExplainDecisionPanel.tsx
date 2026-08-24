@@ -79,7 +79,7 @@ export function ExplainDecisionPanel({
             type="button"
             onClick={() => ask(s)}
             disabled={explain.isPending}
-            className="rounded-pill border border-border-strong bg-surface px-3 py-1 text-xs text-ink transition-colors duration-fast hover:bg-sunken disabled:opacity-50"
+            className="rounded-pill border border-border-strong bg-surface px-3 py-1 text-xs text-ink transition-[color,background-color,border-color,transform] duration-fast hover:-translate-y-px hover:border-accent/50 hover:text-accent active:translate-y-0 disabled:opacity-50"
           >
             {s}
           </button>

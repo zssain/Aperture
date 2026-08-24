@@ -52,7 +52,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       onClick={loading ? undefined : onClick}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded font-medium",
-        "transition-colors duration-fast disabled:cursor-not-allowed disabled:opacity-50",
+        // Smooth colour/press feedback: a subtle scale-down on active reads as a
+        // tactile press without adding shadows the design system reserves for overlays.
+        "transition-[color,background-color,border-color,opacity,transform] duration-fast",
+        "active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
         VARIANTS[variant],
         SIZES[size],
         className,
