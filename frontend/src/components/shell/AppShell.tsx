@@ -2,6 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
+import { ArchitectureAssistant } from "../../features/assistant/ArchitectureAssistant";
 import { Icon } from "../ui/Icon";
 import { Sidebar } from "./Sidebar";
 
@@ -67,6 +68,8 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      <ArchitectureAssistant />
     </div>
   );
 }

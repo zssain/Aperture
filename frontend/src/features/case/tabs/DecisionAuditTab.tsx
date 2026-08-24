@@ -1,5 +1,6 @@
 import { Chip } from "../../../components/ui/Chip";
 import { InfoHint } from "../../../components/ui/InfoHint";
+import { ExplainDecisionPanel } from "../../assistant/ExplainDecisionPanel";
 import { LedgerTimeline } from "../LedgerTimeline";
 import { ReplayPanel } from "../ReplayPanel";
 import type { CaseData } from "../useCase";
@@ -15,14 +16,23 @@ function ruleLine(rule: Record<string, unknown>): { number: string; name: string
 /** Decision & Audit tab: the recommendation and the ordered rules that fired, the
  * chained ledger timeline, deterministic replay, and the bureau-only counterfactual.
  * Presented as a trustworthy audit workspace. */
-export function DecisionAuditTab({ data }: { data: CaseData }) {
+export function DecisionAuditTab({
+  data,
+  onSelectTab,
+}: {
+  data: CaseData;
+  onSelectTab?: (tab: string) => void;
+}) {
   const decision = data.decision;
   if (!decision) {
     return <p className="text-sm text-negative">No decision was recorded for this case.</p>;
   }
 
   return (
-    <div data-testid="case-tab-body" className="space-y-8 case-wide:grid case-wide:grid-cols-2 case-wide:gap-8 case-wide:space-y-0">
+    <div data-testid="case-tab-body" className="space-y-8">
+      <ExplainDecisionPanel applicationId={data.application.id} onCiteTab={onSelectTab} />
+
+      <div className="space-y-8 case-wide:grid case-wide:grid-cols-2 case-wide:gap-8 case-wide:space-y-0">
       <section aria-label="Policy rules" className="space-y-3">
         <div className="flex items-center gap-2">
           <h3 className="eyebrow">Recommendation</h3>
@@ -67,6 +77,7 @@ export function DecisionAuditTab({ data }: { data: CaseData }) {
         </p>
         <p className="text-sm text-muted">{data.bureau_only.note}</p>
       </section>
+      </div>
     </div>
   );
 }

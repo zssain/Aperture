@@ -33,7 +33,8 @@ export type IconName =
   | "chevron-right"
   | "arrow-right"
   | "eye"
-  | "eye-off";
+  | "eye-off"
+  | "sparkle";
 
 /** Path/element markup per glyph, drawn on the shared 24×24 grid. */
 const PATHS: Record<IconName, JSX.Element> = {
@@ -146,6 +147,12 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M9.5 5.4A9.6 9.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 3.9" />
       <path d="M6.2 7.2A17 17 0 0 0 2 12s3.5 7 10 7a9.5 9.5 0 0 0 3.3-.6" />
       <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </>
+  ),
+  sparkle: (
+    <>
+      <path d="M12 3l1.8 4.9L18.7 9.7l-4.9 1.8L12 16.4l-1.8-4.9L5.3 9.7l4.9-1.8L12 3z" />
+      <path d="M18.5 15.5l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7.7-1.9z" />
     </>
   ),
 };

@@ -13,6 +13,7 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from app.api.router import router
 from app.api.routes.applications import router as applications_router
+from app.api.routes.assistant import router as assistant_router
 from app.api.routes.audit import router as audit_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.cases import router as cases_router
@@ -96,6 +97,7 @@ def create_app() -> FastAPI:
     app.include_router(queue_router, prefix="/api/v1")
     app.include_router(policies_router, prefix="/api/v1")
     app.include_router(cases_router, prefix="/api/v1")
+    app.include_router(assistant_router, prefix="/api/v1")
     app.include_router(reviews_router, prefix="/api/v1")
     app.include_router(recourse_router, prefix="/api/v1")
 

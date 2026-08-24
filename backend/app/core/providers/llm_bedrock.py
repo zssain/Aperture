@@ -18,19 +18,9 @@ from app.core.providers.base import (
     ProviderThrottled,
     ProviderUnavailable,
     SchemaT,
+    assert_llm_payload_safe,
 )
 
-NOTICE_CONTEXT_ALLOWLIST = frozenset(
-    {
-        "outcome",
-        "terms",
-        "reasons",
-        "recourse",
-        "expiry_date",
-        "applicant_display_name",
-        "language",
-    }
-)
 BEDROCK_CALLS: Counter[str] = Counter()
 
 
@@ -51,11 +41,7 @@ class BedrockLLMProvider:
         self._client = client
 
     def _converse(self, system: str, payload: dict[str, Any]) -> tuple[dict[str, Any], int, int]:
-        extras = set(payload) - NOTICE_CONTEXT_ALLOWLIST
-        if extras:
-            raise ProviderResponseError(
-                f"LLM payload contains non-allow-listed fields: {sorted(extras)}"
-            )
+        assert_llm_payload_safe(payload)
         response = self._client.converse(
             modelId=self.model_id,
             system=[{"text": system}],

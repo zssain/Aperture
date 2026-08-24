@@ -262,7 +262,7 @@ export function CaseFilePage() {
               <p className="text-sm text-muted">No decision, so there is no recourse to offer.</p>
             )
           ) : (
-            <DecisionAuditTab data={data} />
+            <DecisionAuditTab data={data} onSelectTab={(tab) => setParam("tab", tab)} />
           )}
         </div>
 

@@ -1,10 +1,10 @@
 """OpenAI chat-completions provider for optional applicant notices.
 
 Mirrors the Bedrock/Gemini contract: a temperature-0 structured-JSON completion over
-an allow-listed decision context, validated against the caller's schema. Any failure
-falls back to the deterministic notice template, so this is never a correctness
-dependency. Uses strict json_schema response formatting so the {subject, body,
-language} shape is guaranteed by the API.
+a PII-guarded context (see ``assert_llm_payload_safe``), validated against the caller's
+schema. Any failure falls back to deterministic output, so this is never a correctness
+dependency. The json_schema response format is derived from the caller's own schema, so
+notices and the grounded assistants each get exactly the shape they expect.
 """
 
 import json
@@ -20,41 +20,22 @@ from app.core.providers.base import (
     ProviderThrottled,
     ProviderUnavailable,
     SchemaT,
+    assert_llm_payload_safe,
 )
 
 _ENDPOINT = "https://api.openai.com/v1/chat/completions"
 
-# Only these decision-facing fields are ever sent to the model — the same PII/scope
-# discipline the Bedrock and Gemini providers enforce.
-NOTICE_CONTEXT_ALLOWLIST = frozenset(
-    {
-        "outcome",
-        "terms",
-        "reasons",
-        "recourse",
-        "expiry_date",
-        "applicant_display_name",
-        "language",
-    }
-)
 
-_RESPONSE_FORMAT: dict[str, Any] = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "applicant_notice",
-        "strict": True,
-        "schema": {
-            "type": "object",
-            "properties": {
-                "subject": {"type": "string"},
-                "body": {"type": "string"},
-                "language": {"type": "string"},
-            },
-            "required": ["subject", "body", "language"],
-            "additionalProperties": False,
+def _response_format(schema: type[SchemaT]) -> dict[str, Any]:
+    """Ask OpenAI for JSON matching the caller's schema (notice or assistant)."""
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": schema.__name__.lstrip("_").lower() or "structured_output",
+            "strict": False,
+            "schema": schema.model_json_schema(),
         },
-    },
-}
+    }
 
 
 class OpenAILLMProvider:
@@ -69,16 +50,12 @@ class OpenAILLMProvider:
     async def complete(
         self, system: str, payload: dict[str, Any], schema: type[SchemaT]
     ) -> SchemaT:
-        extras = set(payload) - NOTICE_CONTEXT_ALLOWLIST
-        if extras:
-            raise ProviderResponseError(
-                f"LLM payload contains non-allow-listed fields: {sorted(extras)}"
-            )
+        assert_llm_payload_safe(payload)
         body = {
             "model": self.model_id,
             "temperature": 0,
             "max_tokens": self._max_tokens,
-            "response_format": _RESPONSE_FORMAT,
+            "response_format": _response_format(schema),
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": json.dumps(payload, sort_keys=True, default=str)},

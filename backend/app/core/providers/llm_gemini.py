@@ -1,9 +1,10 @@
 """Google Gemini text-generation provider for optional applicant notices.
 
 Mirrors the Bedrock provider's contract: a temperature-0 structured-JSON completion
-over an allow-listed decision context, validated against the caller's schema. The
-notices pipeline treats any failure here as an honest miss and falls back to the
-deterministic template, so this provider never becomes a correctness dependency.
+over a PII-guarded context (see ``assert_llm_payload_safe``), validated against the
+caller's schema. Every grounded caller (notices, the decision explainer, the
+architecture guide) treats any failure here as an honest miss and falls back to
+deterministic output, so this provider never becomes a correctness dependency.
 """
 
 import json
@@ -19,34 +20,38 @@ from app.core.providers.base import (
     ProviderThrottled,
     ProviderUnavailable,
     SchemaT,
+    assert_llm_payload_safe,
 )
 
 _ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-# Only these decision-facing fields are ever sent to the model — the same PII/scope
-# discipline the Bedrock provider enforces.
-NOTICE_CONTEXT_ALLOWLIST = frozenset(
-    {
-        "outcome",
-        "terms",
-        "reasons",
-        "recourse",
-        "expiry_date",
-        "applicant_display_name",
-        "language",
-    }
-)
-
-# Force the {subject, body, language} shape the notice validator expects.
-_RESPONSE_SCHEMA: dict[str, Any] = {
-    "type": "OBJECT",
-    "properties": {
-        "subject": {"type": "STRING"},
-        "body": {"type": "STRING"},
-        "language": {"type": "STRING"},
-    },
-    "required": ["subject", "body", "language"],
+_JSON_TO_GEMINI_TYPE = {
+    "string": "STRING",
+    "integer": "INTEGER",
+    "number": "NUMBER",
+    "boolean": "BOOLEAN",
+    "array": "ARRAY",
+    "object": "OBJECT",
 }
+
+
+def _to_gemini_schema(node: dict[str, Any]) -> dict[str, Any]:
+    """Convert a (flat) pydantic JSON schema into Gemini's responseSchema shape."""
+    node_type = node.get("type", "string")
+    if node_type == "object":
+        out: dict[str, Any] = {
+            "type": "OBJECT",
+            "properties": {
+                name: _to_gemini_schema(prop)
+                for name, prop in node.get("properties", {}).items()
+            },
+        }
+        if node.get("required"):
+            out["required"] = node["required"]
+        return out
+    if node_type == "array":
+        return {"type": "ARRAY", "items": _to_gemini_schema(node.get("items", {"type": "string"}))}
+    return {"type": _JSON_TO_GEMINI_TYPE.get(node_type, "STRING")}
 
 
 class GeminiLLMProvider:
@@ -64,11 +69,7 @@ class GeminiLLMProvider:
     async def complete(
         self, system: str, payload: dict[str, Any], schema: type[SchemaT]
     ) -> SchemaT:
-        extras = set(payload) - NOTICE_CONTEXT_ALLOWLIST
-        if extras:
-            raise ProviderResponseError(
-                f"LLM payload contains non-allow-listed fields: {sorted(extras)}"
-            )
+        assert_llm_payload_safe(payload)
         body = {
             "systemInstruction": {"parts": [{"text": system}]},
             "contents": [
@@ -81,7 +82,7 @@ class GeminiLLMProvider:
                 "temperature": 0,
                 "maxOutputTokens": self._max_tokens,
                 "responseMimeType": "application/json",
-                "responseSchema": _RESPONSE_SCHEMA,
+                "responseSchema": _to_gemini_schema(schema.model_json_schema()),
             },
         }
         try:
