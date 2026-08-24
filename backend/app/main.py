@@ -33,7 +33,6 @@ from app.api.routes.reviews import router as reviews_router
 from app.api.routes.sources import router as sources_router
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
-from app.core.providers.base import ProviderNotConfigured, ProviderUnavailable
 from app.core.providers.registry import configured_registry
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
@@ -72,8 +71,10 @@ def create_app() -> FastAPI:
         # missing optional key (e.g. an LLM provider) must never take the whole API down.
         try:
             app.state.providers = configured_registry()
-        except (ProviderNotConfigured, ProviderUnavailable) as exc:
-            logger.warning("provider_init_degraded", reason=str(exc))
+        except Exception as exc:  # incl. a missing optional provider dependency
+            logger.warning(
+                "provider_init_degraded", reason=str(exc), error=type(exc).__name__
+            )
 
     app.add_middleware(
         CORSMiddleware,

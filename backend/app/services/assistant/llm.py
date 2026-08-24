@@ -12,10 +12,7 @@ from pydantic import BaseModel
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.core.providers.base import (
-    ProviderNotConfigured,
-    ProviderUnavailable,
-)
+from app.core.providers.base import ProviderNotConfigured
 from app.core.providers.registry import configured_registry
 
 logger = get_logger(__name__)
@@ -41,7 +38,7 @@ async def complete_with_fallback(
         return None
     try:
         registry = configured_registry()
-    except (ProviderNotConfigured, ProviderUnavailable, RuntimeError):
+    except Exception:  # unconfigured, unavailable, or a missing provider dependency
         return None
     for name in _provider_chain():
         try:
