@@ -435,6 +435,7 @@ def _row_out(row: Any) -> QueueRowOut:
         verification=row.verification or "UNKNOWN",
         waiting_seconds=int(row.waiting_seconds or 0),
         decided_at=row.decided_at,
+        superseded=row.superseded_by is not None,
         change=(
             DecisionChangeOut(
                 direction=row.change_direction,
@@ -487,6 +488,7 @@ def _base_select() -> Select[Any]:
             Decision.terms,
             Decision.fired_rules,
             Decision.decided_at,
+            Decision.superseded_by,
             Applicant.display_name,
             Applicant.external_ref,
             Application.requested_amount_paise,

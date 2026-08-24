@@ -95,7 +95,19 @@ function SortArrow({ direction }: { direction: "ascending" | "descending" | "non
 function ApplicantCell({ row }: { row: QueueRow }) {
   return (
     <div className="flex flex-col">
-      <span className="font-medium text-ink">{row.applicant_name}</span>
+      <span className="flex items-center gap-2">
+        <span className={cn("font-medium", row.superseded ? "text-muted" : "text-ink")}>
+          {row.applicant_name}
+        </span>
+        {row.superseded ? (
+          <span
+            title="A later decision replaced this one; opening the case shows the current decision."
+            className="rounded bg-sunken px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted"
+          >
+            Superseded
+          </span>
+        ) : null}
+      </span>
       <span className="text-xs text-muted">{row.applicant_ref}</span>
     </div>
   );

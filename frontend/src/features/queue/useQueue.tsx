@@ -50,6 +50,7 @@ export interface QueueRow {
   verification: string;
   waiting_seconds: number;
   decided_at: string;
+  superseded?: boolean;
   change?: QueueChange | null;
 }
 

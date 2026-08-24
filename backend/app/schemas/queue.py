@@ -55,6 +55,7 @@ class QueueRowOut(BaseModel):
     verification: str  # CLEAR | ELEVATED | HIGH | UNKNOWN
     waiting_seconds: int
     decided_at: datetime
+    superseded: bool = False
     change: DecisionChangeOut | None = None
 
 
