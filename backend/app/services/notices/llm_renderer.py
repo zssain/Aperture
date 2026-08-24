@@ -116,6 +116,7 @@ async def render_notice(
             )
         validation = validate_notice(parsed, context)
         if not validation.ok:
+            logger.info("notice_validation_failed", errors=list(validation.errors))
             raise ValueError("; ".join(validation.errors))
         result = RenderedNotice(
             subject=parsed.subject,

@@ -57,8 +57,16 @@ _NUMBER = re.compile(r"(?<!\w)[₹$€£]?\s*\d[\d,.]*(?:%|\s*(?:months?|मह�
 
 
 def _normal_number(value: str) -> str:
+    """Canonicalise a numeral to a value-based key so the same number written in different
+    formats compares equal — "22", "22.00" and a sentence-final "22." all map to "22", and
+    "30,000.00" maps to "30000". This still rejects genuinely invented numbers while no longer
+    false-flagging a value the model merely reformatted (a percentage, a rounded rupee amount,
+    or a year followed by a full stop)."""
     value = unicodedata.normalize("NFKC", value).translate(_DIGIT_TRANSLATION)
-    return re.sub(r"[^0-9.]", "", value.replace(",", ""))
+    digits = re.sub(r"[^0-9.]", "", value.replace(",", "")).strip(".")
+    if "." in digits:
+        digits = digits.rstrip("0").rstrip(".")
+    return digits
 
 
 def injected_numerals(context: NoticeContext) -> set[str]:
