@@ -69,10 +69,12 @@ export function RecourseTab({
         )}
       </section>
 
+      {/* The applicant notice is always previewable: the recourse (evidence-request) letter
+          when there is a viable path, otherwise the decision letter itself. */}
+      <NoticePreview decisionId={decisionId} kind={options.length > 0 ? "recourse" : "decision"} />
+
       {options.length > 0 ? (
         <>
-          <NoticePreview decisionId={decisionId} kind="recourse" />
-
           <section aria-label="Send request" className="space-y-3">
             <h3 className="eyebrow">Send to applicant</h3>
             <div className="flex flex-wrap items-center gap-3">
