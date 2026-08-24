@@ -412,6 +412,8 @@ def _render(card: dict[str, Any]) -> _Canvas:
         note_x = _MARGIN
         note_w = _CONTENT_W - 262
         c.text(note_x, chart_top - 12, "Reliability diagram", 9.0, bold=True, color=_INK)
+        # Drop the cursor below the heading so the paragraph does not render on top of it.
+        c.y = chart_top - 14
         for line in _wrap(
             "Predicted PD (x) against the observed default rate (y) per score band. Points on the "
             "dashed line are perfectly calibrated; points above it mean the model under-predicts "
