@@ -1,0 +1,27 @@
+# Optional overlay: turn the LLM ON for the assistants ("Ask AI") and applicant notices.
+#
+# The primary is OpenAI; if it errors the assistants fall back to Gemini, then to the
+# deterministic grounded summary. Keys are read from a .env file you create ON THE BOX
+# (never committed) via compose variable substitution — they are NOT baked into any image.
+#
+# Usage (layer it AFTER the prod + aws files):
+#   printf 'OPENAI_API_KEY=sk-...\nGEMINI_NEW_API_KEY=AIza-...\n' > ~/Aperture/.env && chmod 600 ~/Aperture/.env
+#   CMP="-f docker-compose.prod.yml -f docker-compose.aws.yml -f docker-compose.llm.yml"
+#   sudo -E docker compose $CMP up -d
+#
+# NOTE: the OpenAI key (the primary) is required for the API to boot with the LLM on —
+# a missing primary key fails startup by design. The Gemini key is optional (backup only).
+services:
+  api:
+    environment: &llm_environment
+      LLM_NOTICES_ENABLED: "true"
+      LLM_PROVIDER: openai
+      LLM_BACKUP_PROVIDER: gemini
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL_ID: ${OPENAI_MODEL_ID:-gpt-4o-mini}
+      GEMINI_NEW_API_KEY: ${GEMINI_NEW_API_KEY:-}
+      GEMINI_MODEL_ID: ${GEMINI_MODEL_ID:-gemini-flash-lite-latest}
+  worker:
+    environment: *llm_environment
+  migrate:
+    environment: *llm_environment
